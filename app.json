@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.reactnativeinterview"
+      "bundleIdentifier": "com.anonymous.reactnativeinterview",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Face ID is used to confirm payouts over 1,000.00."
+      }
     },
     "android": {
       "adaptiveIcon": {

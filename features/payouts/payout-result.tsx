@@ -49,6 +49,21 @@ function describe(outcome: PayoutOutcome): ResultCopy {
         message: REJECTION_MESSAGES[outcome.reason],
         action: 'try-again',
       };
+    case 'not-sent':
+      return outcome.reason === 'biometrics-not-set-up'
+        ? {
+            tone: 'error',
+            title: 'Biometrics Not Set Up',
+            message:
+              'Payouts over 1,000.00 need Face ID, Touch ID or fingerprint. Set up biometrics in your device Settings, then try again.',
+            action: 'back',
+          }
+        : {
+            tone: 'error',
+            title: 'Unable to Process Payout',
+            message: 'Biometric authentication was cancelled.',
+            action: 'try-again',
+          };
     case 'unconfirmed':
       return {
         tone: 'error',

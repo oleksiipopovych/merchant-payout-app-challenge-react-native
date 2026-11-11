@@ -7,7 +7,9 @@ export type PayoutOutcome =
   | { kind: 'completed'; payout: PayoutResponse }
   | { kind: 'failed'; payout: PayoutResponse }
   | { kind: 'rejected'; reason: 'insufficient-funds' | 'service-unavailable' | 'invalid-request' }
-  | { kind: 'unconfirmed' };
+  | { kind: 'unconfirmed' }
+  /** Stopped on the device before sending, e.g. a failed Biometric Check. */
+  | { kind: 'not-sent'; reason: 'biometric-check-failed' | 'biometrics-not-set-up' };
 
 /** Sends a Payout and classifies the answer into a Payout outcome. Never throws. */
 export async function sendPayout(

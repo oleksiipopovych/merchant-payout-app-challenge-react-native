@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] Payouts of exactly 1,000.00 or less (GBP or EUR) send without a Biometric Check
-- [ ] Payouts of 1,000.01 or more prompt for the Biometric Check before any request is sent
-- [ ] Pass → Payout sent; fail/cancel → no request, error on confirmation, retry possible
-- [ ] Not enrolled / unavailable → no request, message directing to Settings
+- [x] Payouts of exactly 1,000.00 or less (GBP or EUR) send without a Biometric Check
+- [x] Payouts of 1,000.01 or more prompt for the Biometric Check before any request is sent
+- [x] Pass → Payout sent; fail/cancel → no request, error on confirmation, retry possible
+- [x] Not enrolled / unavailable → no request, message directing to Settings
 - [ ] Works on iOS Simulator (Face ID enrolled / matching / non-matching) and Android Emulator (fingerprint) per README
-- [ ] Unit tests for the High-value boundary; screen tests for pass, fail and not-enrolled via the module mock
+- [x] Unit tests for the High-value boundary; screen tests for pass, fail and not-enrolled via the module mock
