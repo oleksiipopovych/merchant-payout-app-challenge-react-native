@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from 'expo-router/testing-library';
+import { act, screen } from 'expo-router/testing-library';
 import { Alert, type AlertButton } from 'react-native';
 
 import { goToTab } from '@/test/app-driver';
