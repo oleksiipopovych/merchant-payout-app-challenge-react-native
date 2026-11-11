@@ -64,3 +64,5 @@ expo-env.d.ts
 # Generated native projects (Expo prebuild / expo run:*)
 /ios
 /android
+# Gradle output inside local native modules
+modules/*/android/build/

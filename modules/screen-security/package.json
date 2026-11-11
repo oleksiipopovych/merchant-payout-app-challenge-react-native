@@ -4,7 +4,7 @@
   "description": "Device identity, biometrics and screenshot events for the merchant payout app",
   "main": "index.ts",
   "license": "UNLICENSED",
-  "author": "",
-  "homepage": "",
+  "author": "Merchant Payout App",
+  "homepage": "https://github.com/cko-recruitment/merchant-payout-app-challenge-react-native",
   "private": true
 }

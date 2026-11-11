@@ -6,7 +6,7 @@ Pod::Spec.new do |s|
   s.name           = 'ScreenSecurity'
   s.version        = package['version']
   s.summary        = package['description']
-  s.description    = package['description']
+  s.description    = 'Local Expo module: device identity, biometrics and screenshot events.'
   s.license        = package['license']
   s.author         = package['author']
   s.homepage       = package['homepage']
