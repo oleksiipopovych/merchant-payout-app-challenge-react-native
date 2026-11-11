@@ -6,10 +6,10 @@
 
 **Status:** ready-for-agent
 
-- [ ] Run instructions for iOS and Android dev builds and for tests
-- [ ] Each listed deviation is explained in one or two sentences
-- [ ] ADRs and GLOSSARY.md are linked
-- [ ] Instructions verified from a clean clone
-- [ ] The provided POST /api/payouts mock handler was given the same 500–2000ms latency as the GET handlers so the sending state is visible
-- [ ] Run instructions: the app needs a dev build (`npx expo run:ios` / `npx expo run:android`), not Expo Go, because of the local ScreenSecurity module
-- [ ] The screenshot warning uses a native Alert to match the reference (the spec originally chose a non-blocking banner; the README allows "a Toast or an Alert")
+- [x] Run instructions for iOS and Android dev builds and for tests
+- [x] Each listed deviation is explained in one or two sentences
+- [x] ADRs and GLOSSARY.md are linked
+- [x] Instructions verified from a clean clone: `npm ci`, `npm test` (cold Jest cache), `npx tsc --noEmit` and `npm run lint` all exit 0. The native run (`npx expo run:ios` / `run:android`) was not part of this check.
+- [x] The provided POST /api/payouts mock handler was given the same 500–2000ms latency as the GET handlers so the sending state is visible
+- [x] Run instructions: the app needs a dev build (`npx expo run:ios` / `npx expo run:android`), not Expo Go, because of the local ScreenSecurity module
+- [x] The screenshot warning uses a native Alert to match the reference (the spec originally chose a non-blocking banner; the README allows "a Toast or an Alert")
