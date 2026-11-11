@@ -1,319 +1,163 @@
-# 💳 Merchant Payout App Challenge (Expo)
+# Merchant Payout App
 
-Welcome to the Merchant Payout Challenge! This is a mobile frontend coding challenge designed to assess your ability to implement a financial payout experience using React Native and Expo.
+My solution to the merchant payout challenge (Expo / React Native). The original brief is in [CHALLENGE.md](CHALLENGE.md).
 
-Your task is to build a merchant dashboard and payout flow that allows users to:
+The project's domain language is in [GLOSSARY.md](GLOSSARY.md), the key decisions are recorded as ADRs in [docs/adr/](docs/adr/), and the spec and tickets it was built from are in [.scratch/merchant-payout/](.scratch/merchant-payout/).
 
-* Review account balances and recent activity with pagination
-* Initiate and validate a payout to a bank account with confirmation
-* Integrate native device identity for payout requests
-* Require biometric authentication for payouts over £1,000.00
-* Protect the payout screen from screenshots
-* Handle various edge cases, including network errors and insufficient funds
+## Running it
 
-## 📑 Table of Contents
+You need Node 24 (see `.nvmrc`), plus Xcode for iOS and/or Android Studio with an emulator.
 
-* [🛠️ Tech Stack](#️-tech-stack)
-* [📡 API Documentation](#-api-documentation)
-  * [Available Endpoints](#available-endpoints)
-  * [Testing Error States](#testing-error-states)
-* [📝 Evaluation Criteria](#-evaluation-criteria)
-* [📋 Implementation Steps](#-implementation-steps)
-  * [Step 1: Merchant Home Screen](#step-1-merchant-home-screen)
-  * [Step 2: Transaction List Modal](#step-2-transaction-list-modal)
-  * [Step 3: Payout Initiation Form & Confirmation](#step-3-payout-initiation-form--confirmation)
-  * [Step 4: Native Device Identity](#step-4-native-device-identity)
-  * [Step 5: Native Biometric for Payouts over £1,000.00](#step-5-native-biometric-for-payouts-over-£100000)
-  * [Step 6: Native Security Events  (Native Module)](#step-6-native-security-events--native-module)
+```bash
+npm install
+npx expo run:ios        # or: npx expo run:android
+```
 
----
+The app includes a local native module (`modules/screen-security`), so it needs a development build. **Expo Go won't work.** The mock API (MSW) starts automatically in development.
 
-## 🛠️ Tech Stack
+Checks:
 
-The project comes with the following pre-configured technologies:
+```bash
+npm test             # Jest + React Native Testing Library + MSW
+npx tsc --noEmit
+npm run lint
+```
 
-* **Expo (SDK 52+)** - Framework for React Native
-* **TypeScript** - For type safety
-* **Expo Router** - File-based routing
-* **Jest & React Native Testing Library** - For testing
+## Trying each feature
 
-## 📡 API Documentation
+| Scenario | How |
+| --- | --- |
+| Completed payout | Any valid amount, e.g. `400`, with IBAN `GB29NWBK60161331926819` |
+| Service unavailable (503) | Amount `999.99` |
+| Insufficient funds (400) | Amount `888.88` |
+| Failed payout (201 with `status: "failed"`) | Any other amount ending in `.99`, e.g. `12.99` |
+| Invalid IBAN | `FR1212345123451234567A12310131231231231` (wrong length for FR) |
+| Biometric Check | Any amount over `1,000.00`, e.g. `1500` |
+| Network error / unreadable response | Covered by tests (MSW answers requests in-app, so it can't be triggered from the simulator) |
 
-The project uses MSW (Mock Service Worker) to mock the banking API. The base URL is configured in `constants/index.ts`.
+**Biometrics**
 
-> **Important**: MSW intercepts HTTP requests at the network level, which means intercepted requests **will not appear in browser DevTools Network tab**. Instead, all intercepted requests are logged to the browser console with the `[MSW]` prefix, showing the method, URL, status code, and response data. This is expected behavior and allows you to debug API calls through the console.
+- iOS Simulator: Features → Face ID → Enrolled. When the prompt appears, Features → Face ID → Matching Face (or Non-matching Face). With Face ID not enrolled, the app tells the merchant to set it up in Settings.
+- Android emulator: enrol a fingerprint in Settings → Security, then use Extended Controls (`…`) → Fingerprint → Touch sensor when prompted.
 
-### Available Endpoints
+**Screenshot warning** (the Payouts tab must be open)
 
-| Endpoint | Method | Description |
+- iOS Simulator: Device → Trigger Screenshot. `Cmd + S` doesn't send the notification.
+- Android: use an **Android 14 (API 34) or newer** emulator and run `adb shell input keyevent 120`. The emulator's camera button and `adb screencap` don't notify apps, so they won't show the warning.
+
+## Requirement map
+
+Each item from the brief, where it's handled, and the ticket it was built in. Native paths are under `modules/screen-security/`.
+
+| Brief requirement | Where | Ticket |
 | --- | --- | --- |
-| `/api/merchant` | `GET` | Returns `available_balance`, `pending_balance`, `currency`, and `activity` (list of recent transactions). |
-| `/api/merchant/activity` | `GET` | Returns paginated activity items using cursor-based pagination. Query parameters: `cursor` (optional, activity ID from previous page) and `limit` (optional, default: 15). Returns `{ items, next_cursor, has_more }`. |
-| `/api/payouts` | `POST` | Initiates a payout. Request body: `{ amount, currency, iban, device_id? }` |
+| **Step 1: Home screen** |  |  |
+| Fetch balance data | `features/home/use-merchant.ts`, `api/client.ts` | [01](.scratch/merchant-payout/issues/01-home-shows-balances.md) |
+| Available and pending balance with the currency symbol | `features/home/balance-card.tsx`, `lib/money/format.ts` | [01](.scratch/merchant-payout/issues/01-home-shows-balances.md) |
+| 3 most recent activity items, description and amount on one row | `features/home/recent-activity.tsx` | [02](.scratch/merchant-payout/issues/02-home-shows-recent-activity.md) |
+| "Show more" opens a modal with the full list | `features/home/recent-activity.tsx` → `app/activity.tsx` (modal in `components/root-navigator.tsx`) | [02](.scratch/merchant-payout/issues/02-home-shows-recent-activity.md), [03](.scratch/merchant-payout/issues/03-activity-sheet-first-page.md) |
+| Loading and error states | `features/home/home-screen.tsx`, `components/error-state.tsx` | [01](.scratch/merchant-payout/issues/01-home-shows-balances.md) |
+| **Step 2: Activity modal** |  |  |
+| Type, description, amount and date | `features/activity/activity-row.tsx`, `features/activity/activity-amount.tsx`, `lib/date/format.ts` | [03](.scratch/merchant-payout/issues/03-activity-sheet-first-page.md) |
+| Infinite scroll with cursor-based pagination | `features/activity/use-activity-pages.ts`, `features/activity/activity-sheet.tsx` | [04](.scratch/merchant-payout/issues/04-activity-sheet-infinite-scroll.md) |
+| Loading and error states, including a failed next page | `features/activity/activity-sheet.tsx` | [03](.scratch/merchant-payout/issues/03-activity-sheet-first-page.md), [04](.scratch/merchant-payout/issues/04-activity-sheet-infinite-scroll.md) |
+| **Step 3: Payout form and confirmation** |  |  |
+| Numeric amount input | `features/payouts/payout-form.tsx` (`decimal-pad`), `lib/money/parse.ts` | [05](.scratch/merchant-payout/issues/05-payout-form-with-validation.md) |
+| Currency dropdown (GBP or EUR) | `components/select.tsx`, `features/payouts/payout-form.tsx` | [05](.scratch/merchant-payout/issues/05-payout-form-with-validation.md) |
+| IBAN validation (valid and invalid examples) | `lib/iban/iban.ts`, `features/payouts/payout-draft.ts` | [05](.scratch/merchant-payout/issues/05-payout-form-with-validation.md) |
+| Usable with the keyboard open | `features/payouts/payouts-screen.tsx` | [05](.scratch/merchant-payout/issues/05-payout-form-with-validation.md) |
+| Confirm disabled when empty, zero or negative | `features/payouts/payout-draft.ts`, `features/payouts/payout-form.tsx` | [05](.scratch/merchant-payout/issues/05-payout-form-with-validation.md) |
+| Confirmation summary before sending | `features/payouts/payout-confirmation.tsx` | [06](.scratch/merchant-payout/issues/06-confirm-and-send-payout.md) |
+| Success with amount and currency | `features/payouts/payout-result.tsx` | [06](.scratch/merchant-payout/issues/06-confirm-and-send-payout.md) |
+| 4xx, 5xx, insufficient funds and network errors | `features/payouts/use-send-payout.ts`, `api/client.ts`, `features/payouts/payout-result.tsx` | [06](.scratch/merchant-payout/issues/06-confirm-and-send-payout.md) |
+| **Step 4: Device identity** |  |  |
+| `ScreenSecurity` native module | `modules/screen-security/` (`ios/ScreenSecurityModule.swift`, `android/.../ScreenSecurityModule.kt`, `index.ts`) | [07](.scratch/merchant-payout/issues/07-screensecurity-module-and-device-id.md) |
+| `getDeviceId()`, sent with the payout as `device_id` | `modules/screen-security/index.ts`, `features/payouts/use-send-payout.ts` | [07](.scratch/merchant-payout/issues/07-screensecurity-module-and-device-id.md) |
+| **Step 5: Biometrics over 1,000.00** |  |  |
+| `isBiometricAuthenticated()` AsyncFunction | Both native files, `modules/screen-security/index.ts` | [08](.scratch/merchant-payout/issues/08-biometric-check-for-high-value-payouts.md) |
+| Checked before `/api/payouts`; abort when `false` | `features/payouts/high-value.ts`, `features/payouts/use-send-payout.ts` | [08](.scratch/merchant-payout/issues/08-biometric-check-for-high-value-payouts.md) |
+| Not set up: tell the user to enable it in Settings | `features/payouts/use-send-payout.ts` (`not-sent` outcome), `features/payouts/payout-result.tsx` | [08](.scratch/merchant-payout/issues/08-biometric-check-for-high-value-payouts.md) |
+| **Step 6: Screenshot warning** |  |  |
+| Emit `onScreenshotTaken` (iOS notification, Android `ScreenCaptureCallback`) | Both native files | [09](.scratch/merchant-payout/issues/09-screenshot-warning-on-payouts.md) |
+| Warning on the Payout screen | `features/payouts/use-screenshot-warning.ts`, `features/payouts/payouts-screen.tsx` | [09](.scratch/merchant-payout/issues/09-screenshot-warning-on-payouts.md) |
 
-> **Note**: The API returns and expects all monetary amounts in the lowest denomination of the currency (e.g., pence for GBP, cents for EUR). For example, `500000` represents `5000.00 GBP` or `5000.00 EUR`. Amounts can include fractional values (e.g., `99999` pence = `999.99 GBP`).
+## How it's built
 
-The types for the API responses are configured in `types/api.ts`.
+### Structure
 
-### Testing Error States
+```
+app/                       Expo Router routes: (tabs)/index, (tabs)/payouts, activity (modal)
+features/home/             balances and the 3 most recent Activity Items
+features/activity/         the Activity sheet with infinite scroll
+features/payouts/          form, confirmation, sending (useSendPayout), results, screenshot warning
+lib/                       pure rules: money parsing and formatting, IBAN, dates
+api/                       typed fetch client and zod response schemas
+components/                shared UI: text field, select, button, error state
+modules/screen-security/   local Expo module (Swift and Kotlin)
+test/                      fake bank API, app driver and render helpers for tests
+```
 
-The mock API supports specific triggers to test your error handling:
+### Key decisions
 
-* **Service Unavailable**: `POST /api/payouts` with an amount of `999.99` (99999 pence) returns a `503 Service Unavailable`.
-* **Insufficient Funds**: `POST /api/payouts` with an amount of `888.88` (88888 pence) returns a `400 Bad Request`.
+**Every response is validated.** `api/client.ts` parses each response with zod (`api/schemas.ts`). The schemas use `satisfies` against the provided types in `types/api.ts`, so the two can't drift apart. Callers only ever see well-formed data or an `ApiError`.
 
-## 📝 Evaluation Criteria
+**Money never goes through floats.** The typed amount is parsed from the string into integer Minor Units (`"999.99"` → `99999`), accepting `.` or `,` as the decimal separator and at most 2 decimal places. Display uses `Intl.NumberFormat` with the currency from the API.
 
-Your solution will be evaluated based on:
+**IBAN validation** strips spaces, uppercases, then checks the characters, the country, the exact length for that country, and the mod-97 checksum, with a specific message for each failure. The confirmation shows a masked IBAN (`GB29 •••• 6819`).
 
-- 🧹 Clean, maintainable code
-- 🔒 Proper TypeScript usage
-- 🏗️ Well-structured components
-- 🎯 Efficient state management
+**Every payout ends in one explicit outcome.** `useSendPayout` returns a `PayoutOutcome` union and never throws:
 
-## 💡 Tips
+| Outcome | When |
+| --- | --- |
+| `completed` | 2xx with `status` other than `"failed"` |
+| `failed` | 2xx with `status: "failed"`: the payout exists but didn't succeed |
+| `rejected` | 400 insufficient funds, 5xx service unavailable, or another 4xx |
+| `unconfirmed` | No response, or a response that can't be read. The payout **may** have been created, so the app says so and asks the merchant to check their activity rather than saying it failed |
+| `not-sent` | The Biometric Check failed, or biometrics aren't set up |
 
-- **Start with Step 1 and work through each step incrementally**
-- Keep accessibility in mind throughout development
-- Use TypeScript effectively
-- Test with the provided invalid input values to verify error handling
-- Don't hesitate to install additional packages if they help you solve the problem more efficiently
-- Consider using libraries for state management, form handling, or UI components if they improve your solution
+**Payouts are never retried automatically,** and a second tap while a payout is sending reuses the request already in flight. The API has no idempotency key, so this is the only protection against sending twice. After any outcome where a payout was (or may have been) created, merchant data and Activity are refreshed.
 
-## 📋 Implementation Steps
+**Biometric Check (Step 5).** Payouts strictly over 1,000.00 in the Payout Currency need a passed check, with no FX conversion. iOS uses `LocalAuthentication`. Android uses the **framework `BiometricPrompt`** (API 28+) with `BIOMETRIC_STRONG`, so there's no third-party or Jetpack dependency. `isBiometricAuthenticated()` resolves `false` when the merchant fails or cancels, and rejects with a coded error when biometrics aren't enrolled or available ([ADR-0002](docs/adr/0002-biometric-check-contract.md)).
 
-### Step 1: Merchant Home Screen
+**Device ID (Step 4)** is `identifierForVendor` on iOS and `ANDROID_ID` on Android, read once per session. If it's unavailable, the payout is still sent without `device_id` ([ADR-0003](docs/adr/0003-payout-without-device-id.md)).
 
-**Goal**: Fetch and display the merchant’s financial overview.
+**Screenshot warning (Step 6).** The Payouts screen listens only while it's focused, and the native code only observes the system while there's a listener. Android re-registers the callback when the app returns to the foreground. Only one alert shows at a time.
 
-**Requirements**:
+### Differences from the brief
 
-* Fetch balance data using the provided API client.
-* Display an account balance section showing the merchant's available balance and pending balance with the currency symbol from the API response.
-* Display a list of the 3 most recent activity items in a single-row layout showing only the description and amount.
-* Display a "show more" button that opens a modal with a full list of activity items.
-* Handle loading and error states gracefully.
+- **Dates:** the brief's text says `DD MM YYYY`, but the reference screenshots show `23 Jan 2026`. I followed the screenshots, using fixed month names rather than `Intl` so the output is identical on iOS and Android.
+- **Negative amounts** show as `-£219.70` (standard `Intl` formatting) rather than `£-219.70` as in the screenshots.
+- **The brief's invalid FR IBAN is blocked,** although the reference confirmation screenshot shows it going through. It passes mod-97 but is 39 characters long, and French IBANs are 27.
+- **No client-side funds check.** The payout currency can differ from the account currency and there are no exchange rates, so only the server decides insufficient funds ([ADR-0001](docs/adr/0001-no-client-side-funds-check.md)).
+- **The mock is static:** balances and Activity don't change after a payout, even though the app refreshes them.
+- **No screenshot warning below Android 14.** There's no screenshot-detection API before API 34. `FLAG_SECURE` on the Payouts screen would be the option for older versions, but it blocks screenshots rather than warning about them, which is a product decision.
+- **The screenshot warning is a native Alert,** matching the reference screenshots. The brief allows a Toast or an Alert.
+- **The "provided API client"** mentioned in the brief isn't in the starter repo, so I wrote `api/client.ts`.
+- **No thousands separators in the amount.** `,` is accepted as a decimal separator for European keyboards, so `1,000` reads as 1.000 and is rejected ("Use at most 2 decimal places"). Type `1000`.
+- **Android accepts strong biometrics only** (`BIOMETRIC_STRONG`), as suits payments. On a phone whose only biometric is face unlock rated as weak, the app treats biometrics as not set up.
+- **One change to the provided mock:** `POST /api/payouts` now has the same 500–2000ms random latency as the GET handlers, so the sending state is visible.
 
-<details>
-<summary>📱 Reference Screenshots</summary>
+## Testing
 
-<table>
-<thead>
-<tr>
-<th>iOS</th>
-<th>Android</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><img src="docs/ios/ios_home.png" alt="iOS Home Screen" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_home.png" alt="Android Home Screen" style="max-width: 300px;" /></td>
-</tr>
-</tbody>
-</table>
+Tests run against the whole app where possible. `test/fake-bank.ts` replaces the API at the network boundary: each test sets only what it needs (e.g. `bank.payoutReply = { payoutStatus: 'failed' }`) and can inspect the requests sent. `test/app-driver.ts` drives the app the way a merchant would (`sendPayout({ amount: '400' })`), so tests read as merchant steps. The native module is replaced by a scriptable mock in `modules/screen-security/__mocks__/`. Pure rules (money, IBAN, dates, the high-value threshold) have their own unit tests.
 
-</details>
+## How I used AI
 
-### Step 2: Transaction List Modal
+<!-- TODO: check this reflects what you did, and add what you verified yourself. -->
 
-**Goal**: Display recent activity with enhanced functionality.
+I built this with an AI coding agent (Claude Code) and [Matt Pocock's skills](https://github.com/mattpocock/skills), configured in [CLAUDE.md](CLAUDE.md):
 
-**Requirements**:
+1. Grilled the design until the open decisions were resolved, recording them in [GLOSSARY.md](GLOSSARY.md) and [docs/adr/](docs/adr/).
+2. Wrote a spec with user stories and split it into 10 tickets with dependencies ([.scratch/merchant-payout/](.scratch/merchant-payout/)).
+3. Implemented the tickets roughly one per commit, with tests for each (see the commit history).
 
-* Display the list of all activity items with type, description, amount, and date (formatted as `DD MM YYYY`).
-* Implement "Infinite Scroll" functionality on the transaction list modal. Load more items automatically as the user scrolls to the bottom.
-* Use cursor-based pagination to fetch additional activity items.
-* Handle loading and error states gracefully.
+<!-- TODO: e.g. "I tested every flow on the iOS Simulator and an Android 14 emulator, and fixed X and Y myself." -->
 
-<details>
-<summary>📱 Reference Screenshots</summary>
+## With more time
 
-<table>
-<thead>
-<tr>
-<th>iOS</th>
-<th>Android</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><img src="docs/ios/ios_transaction.png" alt="iOS Transaction List" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_transaction.png" alt="Android Transaction List" style="max-width: 300px;" /></td>
-</tr>
-<tr>
-<td><img src="docs/ios/ios_transaction_loading.png" alt="iOS Transaction Loading" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_transaction_loading.png" alt="Android Transaction Loading" style="max-width: 300px;" /></td>
-</tr>
-</tbody>
-</table>
-
-</details>
-
-### Step 3: Payout Initiation Form & Confirmation
-
-**Goal**: Create a screen for users to send a payout to a bank account with confirmation modal.
-
-**Requirements**:
-
-* Use a numeric input field for the payout amount.
-* Use a dropdown to select the currency (`GBP` or `EUR`). The currency can be different from the merchant's account currency.
-* Capture the destination IBAN 
-  * Valid IBAN formats (e.g., `GB29NWBK60161331926819`).
-  * Invalid IBAN format (e.g., `FR1212345123451234567A12310131231231231`).
-* Ensure the form remains usable when the keyboard is visible.
-* Ensure the "Confirm" button is disabled if the input is empty, zero, or negative.
-* Display a confirmation screen summarizing the transaction before execution (as shown in the reference images).
-* Handle success response by showing Payout confirmation with amount and currency.
-* Handle failures (e.g., `4xx`, `5xx` errors, insufficient funds) and network errors.
-
-<details>
-<summary>📱 Reference Screenshots</summary>
-
-<table>
-<thead>
-<tr>
-<th>iOS</th>
-<th>Android</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><img src="docs/ios/ios_payout.png" alt="iOS Payout Form" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_payout.png" alt="Android Payout Form" style="max-width: 300px;" /></td>
-</tr>
-<tr>
-<td><img src="docs/ios/ios_payout_confirm.png" alt="iOS Payout Confirm" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_payout_confirm.png" alt="Android Payout Confirm" style="max-width: 300px;" /></td>
-</tr>
-<tr>
-<td><img src="docs/ios/ios_payout_confirmed.png" alt="iOS Payout Confirmed" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_payout_confirmed.png" alt="Android Payout Confirmed" style="max-width: 300px;" /></td>
-</tr>
-<tr>
-<td><img src="docs/ios/ios_payout_failed.png" alt="iOS Payout Failed" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_payout_failed.png" alt="Android Payout Failed" style="max-width: 300px;" /></td>
-</tr>
-<tr>
-<td><img src="docs/ios/ios_payout_insufficient_funds.png" alt="iOS Payout Insufficient Funds" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_payout_insufficient_funds.png" alt="Android Payout Insufficient Funds" style="max-width: 300px;" /></td>
-</tr>
-</tbody>
-</table>
-
-</details>
-
-### Step 4: Native Device Identity (Native Module)
-
-**Goal**: Identify the Merchant's device identifier using a Native Bridge and send as part of the Payout API request.
-
-**Requirements**:
-* **Create** a native module named `ScreenSecurity` (this module will be extended in Steps 5 and 6).
-* **Function**: Implement a `getDeviceId()` function in the `ScreenSecurity` native module that returns a unique device identifier.
-* **Send**: Send this ID with the Payout request as `device_id`.
-
-<details>
-<summary>📱 Reference Screenshots</summary>
-
-<table>
-<thead>
-<tr>
-<th>iOS</th>
-<th>Android</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><em>(No visual changes - device ID is sent in the background)</em></td>
-<td><em>(No visual changes - device ID is sent in the background)</em></td>
-</tr>
-</tbody>
-</table>
-
-</details>
-
-### Step 5: Biometric Authentication for Payouts over £1,000.00 (Native Module)
-
-**Goal**: Secure payouts over **£1,000.00** (or equivalent in selected currency, e.g., €1,000.00 for EUR) using a custom native bridge (no 3rd party libs).
-
-**Requirements**:
-
-* **Bridge to Native**: Extend the existing `ScreenSecurity` native module created in Step 4.
-* **AsyncFunction**: The module should expose a `isBiometricAuthenticated()` AsyncFunction for biometrics.
-* Before the `/api/payouts` call, check if the payout amount exceeds the threshold (`1,000.00` in the selected currency). If it does, await the native bridge. If the promise resolves `false`, abort the payout.
-* If biometrics are not setup, inform the user to setup biometrics in the settings and abort the payout.
-
-**Simulator testing**:
-* iOS: In Simulator menu, go to `Features` > `Face ID` > `Enrolled`. Then trigger your payout and select `Features` > `Face ID` > `Matching Face`.
-* Android: Go to Emulated devices `Settings` > `Security` > `Fingerprint` or search `fingerprint` in the search bar for the Settings screen and enable Authentication. Then in the Simuulator you can use the Extended Controls `(...)` > `Fingerprint` to simulate a touch.
-
-<details>
-<summary>📱 Reference Screenshots</summary>
-
-<table>
-<thead>
-<tr>
-<th>iOS</th>
-<th>Android</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><img src="docs/ios/ios_payout_biometric.png" alt="iOS Biometric" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_payout_biometric.png" alt="Android Biometric" style="max-width: 300px;" /></td>
-</tr>
-<tr>
-<td><img src="docs/ios/ios_payout_biometric_failed.png" alt="iOS Biometric Failed" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_payout_biometric_failed.png" alt="Android Biometric Failed" style="max-width: 300px;" /></td>
-</tr>
-</tbody>
-</table>
-
-</details>
-
-### Step 6: Screenshot/Screen-Capture Security Alert
-
-**Goal**: Make sure the Merchant is aware of the risk of screenshots on the Payout screen.
-
-**Requirements**:
-
-* **Bridge to Native**: Extend the existing `ScreenSecurity` native module created in Step 4.
-* **Emit Native Events**: The module should listen for the system's "Screenshot" event and emit an `onScreenshotTaken` event to the JS layer.
-* **iOS**: Use `UIApplication.userDidTakeScreenshotNotification`.
-* **Android (API 34+)**: Use `Activity.ScreenCaptureCallback`.
-* **UI Reaction**: On the **Payout** screen, listen for this event and show a non-intrusive warning (like a Toast or an Alert) reminding the user to keep their financial data private.
-
-**Simulator testing**:
-* **iOS**: Use **Device → Trigger Screenshot** from the Simulator menu 
-
-  **Note**: `Cmd + S` does not trigger the notification in the simulator.
-* **Android**: The Android `14+` API requires hardware button presses. In an emulator, you can simulate this using the emulator's Power and Volume Down buttons.
-
-  You can use the `adb` command to trigger the screenshot warning on the simulator:
-
-  ```bash
-  adb shell input keyevent 120 # Power + Volume Down
-  ```
-
-   **Note**: This API only detects hardware button presses (Power + Volume Down), not `adb` screencap or emulator screenshot buttons.
-
-<details>
-<summary>📱 Reference Screenshots</summary>
-
-<table>
-<thead>
-<tr>
-<th>iOS</th>
-<th>Android</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><img src="docs/ios/ios_payout_screenshot_warning.png" alt="iOS Screenshot Warning" style="max-width: 300px;" /></td>
-<td><img src="docs/android/and_payout_screenshot_warning.png" alt="Android Screenshot Warning" style="max-width: 300px;" /></td>
-</tr>
-</tbody>
-</table>
-
-</details>
-
-Good luck! We are excited to see how you build this experience. 🚀
+- A request timeout and an idempotency key for payouts, so an `unconfirmed` payout could be retried safely.
+- `FLAG_SECURE` on the Payouts screen below Android 14.
+- Pull-to-refresh in the Activity sheet.
+- End-to-end tests with Maestro for the biometric and screenshot flows, which the Jest suite mocks.
+- CI (typecheck, lint, tests).
+- Hide payout details in the app-switcher snapshot.
