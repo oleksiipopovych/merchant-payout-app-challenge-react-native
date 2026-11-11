@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { ErrorState } from '@/components/error-state';
 import { ThemedText } from '@/components/themed-text';
@@ -8,6 +9,10 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { ActivityRow } from './activity-row';
 import { useActivityPages } from './use-activity-pages';
+
+// On iOS the sheet is presented below the status bar, so only the bottom (home indicator)
+// needs insetting; on Android the modal is full screen and needs the top inset too.
+const SHEET_EDGES: Edge[] = Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom'];
 
 export function ActivitySheet() {
   const tint = useThemeColor({}, 'tint');
@@ -34,60 +39,65 @@ export function ActivitySheet() {
 
   return (
     <ThemedView style={styles.screen}>
-      <View style={styles.header}>
-        <ThemedText type="title" accessibilityRole="header">
-          Recent Activity
-        </ThemedText>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <ThemedText type="defaultSemiBold" style={{ color: tint }}>
-            Done
+      <SafeAreaView style={styles.screen} edges={SHEET_EDGES}>
+        <View style={styles.header}>
+          <ThemedText type="title" accessibilityRole="header">
+            Recent Activity
           </ThemedText>
-        </Pressable>
-      </View>
-      {activity.isPending ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" accessibilityLabel="Loading activity" />
+          <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
+            <ThemedText type="defaultSemiBold" style={{ color: tint }}>
+              Done
+            </ThemedText>
+          </Pressable>
         </View>
-      ) : activity.isError && items.length === 0 ? (
-        <View style={styles.centered}>
-          <ErrorState
-            message="We couldn't load your activity."
-            onRetry={() => activity.refetch()}
+        {activity.isPending ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" accessibilityLabel="Loading activity" />
+          </View>
+        ) : activity.isError && items.length === 0 ? (
+          <View style={styles.centered}>
+            <ErrorState
+              message="We couldn't load your activity."
+              onRetry={() => activity.refetch()}
+            />
+          </View>
+        ) : (
+          <FlatList
+            testID="activity-list"
+            data={items}
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              activity.isFetchingNextPage ? (
+                <ActivityIndicator
+                  style={styles.footer}
+                  accessibilityLabel="Loading more activity"
+                />
+              ) : activity.isFetchNextPageError ? (
+                <View style={[styles.footer, styles.footerError]} accessibilityLiveRegion="polite">
+                  <ThemedText>Couldn&apos;t load more</ThemedText>
+                  <ThemedText> · </ThemedText>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Retry loading more activity"
+                    onPress={loadMore}
+                    hitSlop={12}>
+                    <ThemedText type="defaultSemiBold" style={{ color: tint }}>
+                      Retry
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              ) : null
+            }
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <ActivityRow item={item} />}
+            ItemSeparatorComponent={() => (
+              <View style={[styles.separator, { backgroundColor: separatorColor }]} />
+            )}
+            contentContainerStyle={styles.list}
           />
-        </View>
-      ) : (
-        <FlatList
-          testID="activity-list"
-          data={items}
-          onEndReached={onEndReached}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            activity.isFetchingNextPage ? (
-              <ActivityIndicator style={styles.footer} accessibilityLabel="Loading more activity" />
-            ) : activity.isFetchNextPageError ? (
-              <View style={[styles.footer, styles.footerError]} accessibilityLiveRegion="polite">
-                <ThemedText>Couldn&apos;t load more</ThemedText>
-                <ThemedText> · </ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Retry loading more activity"
-                  onPress={loadMore}
-                  hitSlop={12}>
-                  <ThemedText type="defaultSemiBold" style={{ color: tint }}>
-                    Retry
-                  </ThemedText>
-                </Pressable>
-              </View>
-            ) : null
-          }
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ActivityRow item={item} />}
-          ItemSeparatorComponent={() => (
-            <View style={[styles.separator, { backgroundColor: separatorColor }]} />
-          )}
-          contentContainerStyle={styles.list}
-        />
-      )}
+        )}
+      </SafeAreaView>
     </ThemedView>
   );
 }
@@ -100,9 +110,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
   },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
   footer: { paddingVertical: 16 },
-  footerError: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  footerError: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   list: { paddingHorizontal: 16, paddingBottom: 32 },
   separator: { height: StyleSheet.hairlineWidth, opacity: 0.4 },
 });
