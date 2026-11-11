@@ -1,0 +1,3 @@
+# Biometric Check: resolve `false` on failure, reject when not set up
+
+`ScreenSecurity.isBiometricAuthenticated()` resolves `true`/`false` as the README specifies, where `false` means the merchant failed or cancelled the Biometric Check. When biometrics are not enrolled or not available on the device it **rejects** with a coded error (`E_BIOMETRICS_NOT_ENROLLED`, `E_BIOMETRICS_UNAVAILABLE`) instead of resolving `false`. The app must tell those cases apart ("try again" vs "set up biometrics in Settings"), and a boolean alone can't carry that. Overloading `false` would have kept the signature simpler but lost the distinction.
