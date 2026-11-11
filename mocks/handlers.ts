@@ -129,6 +129,11 @@ export const handlers = [
 
   // POST /api/payouts
   http.post(`${API_BASE_URL}/api/payouts`, async ({ request }) => {
+    // Add random timeout to simulate network latency (500-2000ms), matching the GET handlers
+    // so the app's sending state is visible. (Added on top of the provided mock.)
+    const delay = Math.floor(Math.random() * 1500) + 500;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
     const body = (await request.json()) as CreatePayoutRequest;
     const { amount, currency, iban } = body;
 
