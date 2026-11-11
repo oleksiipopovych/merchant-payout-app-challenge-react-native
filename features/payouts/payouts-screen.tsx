@@ -16,6 +16,7 @@ import { initialPayoutFormValues, type PayoutDraft, type PayoutFormValues } from
 import { PayoutForm } from './payout-form';
 import { PayoutResult } from './payout-result';
 import { sendPayout, type PayoutOutcome } from './send-payout';
+import { useScreenshotWarning } from './use-screenshot-warning';
 
 type PayoutStep =
   | { step: 'editing' }
@@ -27,6 +28,7 @@ export function PayoutsScreen() {
   const [values, setValues] = useState<PayoutFormValues>(initialPayoutFormValues);
   const [flow, setFlow] = useState<PayoutStep>({ step: 'editing' });
   const queryClient = useQueryClient();
+  useScreenshotWarning();
   // Guards against a second tap landing before the locked summary has re-rendered;
   // the API has no idempotency key, so this is the only protection against a duplicate Payout.
   const inFlight = useRef(false);
@@ -87,6 +89,7 @@ export function PayoutsScreen() {
             )}
           </ScrollView>
         </KeyboardAvoidingView>
+
       </SafeAreaView>
 
       {(flow.step === 'confirming' || flow.step === 'submitting') && (

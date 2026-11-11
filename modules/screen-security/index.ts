@@ -2,6 +2,8 @@
  * ScreenSecurity: the app's native bridge for device identity (Step 4), biometrics (Step 5)
  * and screenshot events (Step 6).
  */
+import type { EventSubscription } from 'expo-modules-core';
+
 import ScreenSecurityModule from './src/ScreenSecurityModule';
 
 export { BiometricErrorCode } from './src/constants';
@@ -21,4 +23,12 @@ export function getDeviceId(): Promise<string | null> {
  */
 export function isBiometricAuthenticated(reason: string): Promise<boolean> {
   return ScreenSecurityModule.isBiometricAuthenticated(reason);
+}
+
+/**
+ * Calls `listener` whenever the merchant takes a screenshot. Remove the returned
+ * subscription when no longer needed. No-op on Android below 14 (API 34).
+ */
+export function addScreenshotListener(listener: () => void): EventSubscription {
+  return ScreenSecurityModule.addListener('onScreenshotTaken', listener);
 }

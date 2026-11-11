@@ -13,6 +13,7 @@ import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BiometricsNotEnrolledException :
@@ -22,8 +23,36 @@ class BiometricsUnavailableException :
   CodedException("E_BIOMETRICS_UNAVAILABLE", "Biometric authentication is not available on this device", null)
 
 class ScreenSecurityModule : Module() {
+  // Held as Any so this class never references Activity.ScreenCaptureCallback (API 34) on older devices.
+  private var screenCaptureCallback: Any? = null
+  private var screenCaptureActivity: WeakReference<Activity>? = null
+  private var observingScreenshots = false
+
   override fun definition() = ModuleDefinition {
     Name("ScreenSecurity")
+
+    Events("onScreenshotTaken")
+
+    // Screenshot detection needs Activity.ScreenCaptureCallback (Android 14, API 34). On older
+    // versions this is a silent no-op. It only detects hardware-button screenshots.
+    OnStartObserving("onScreenshotTaken") {
+      observingScreenshots = true
+      appContext.currentActivity?.let { registerScreenCapture(it) }
+    }
+
+    OnStopObserving("onScreenshotTaken") {
+      observingScreenshots = false
+      unregisterScreenCapture()
+    }
+
+    // The callback is tied to an Activity instance; follow the app back to the foreground.
+    OnActivityEntersForeground {
+      if (observingScreenshots) appContext.currentActivity?.let { registerScreenCapture(it) }
+    }
+
+    OnActivityEntersBackground {
+      unregisterScreenCapture()
+    }
 
     // ANDROID_ID is scoped to the app signing key, user and device (API 26+), and survives
     // reinstalls with the same key. It needs no permission.
@@ -49,6 +78,25 @@ class ScreenSecurityModule : Module() {
       }
       authenticate(activity, reason, promise)
     }.runOnQueue(Queues.MAIN)
+  }
+
+  private fun registerScreenCapture(activity: Activity) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
+    if (screenCaptureActivity?.get() === activity) return
+    unregisterScreenCapture()
+    val callback = Activity.ScreenCaptureCallback { sendEvent("onScreenshotTaken") }
+    activity.registerScreenCaptureCallback(activity.mainExecutor, callback)
+    screenCaptureCallback = callback
+    screenCaptureActivity = WeakReference(activity)
+  }
+
+  private fun unregisterScreenCapture() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
+    val callback = screenCaptureCallback as? Activity.ScreenCaptureCallback
+    val activity = screenCaptureActivity?.get()
+    if (callback != null && activity != null) activity.unregisterScreenCaptureCallback(callback)
+    screenCaptureCallback = null
+    screenCaptureActivity = null
   }
 
   /** Pre-flight check on API 29+, where BiometricManager exists. API 28 relies on prompt errors. */

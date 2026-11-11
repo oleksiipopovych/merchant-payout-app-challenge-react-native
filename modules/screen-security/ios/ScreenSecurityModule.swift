@@ -13,8 +13,31 @@ final class BiometricsUnavailableException: Exception {
 }
 
 public class ScreenSecurityModule: Module {
+  private var screenshotObserver: NSObjectProtocol?
+
   public func definition() -> ModuleDefinition {
     Name("ScreenSecurity")
+
+    Events("onScreenshotTaken")
+
+    // Observe screenshots only while JS has a listener for them.
+    OnStartObserving("onScreenshotTaken") {
+      guard self.screenshotObserver == nil else { return }
+      self.screenshotObserver = NotificationCenter.default.addObserver(
+        forName: UIApplication.userDidTakeScreenshotNotification,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        self?.sendEvent("onScreenshotTaken")
+      }
+    }
+
+    OnStopObserving("onScreenshotTaken") {
+      if let observer = self.screenshotObserver {
+        NotificationCenter.default.removeObserver(observer)
+        self.screenshotObserver = nil
+      }
+    }
 
     // identifierForVendor is stable per install for apps from the same vendor. It can be nil
     // briefly after a device restart before first unlock, in which case JS receives null.
