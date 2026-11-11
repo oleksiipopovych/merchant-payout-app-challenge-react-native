@@ -8,3 +8,6 @@ afterEach(() => server.resetHandlers());
 
 // Clean up after the tests are finished
 afterAll(() => server.close());
+
+// The provided MSW handlers log every request/response; keep test output readable.
+jest.spyOn(console, 'log').mockImplementation(() => {});

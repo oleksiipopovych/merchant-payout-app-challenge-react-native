@@ -1,9 +1,10 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { QueryClient } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useState } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AppProviders } from '@/components/app-providers';
 import { useMSW } from '../mocks/useMSW';
 
 function RootNavigator() {
@@ -16,8 +17,8 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  
+  const [queryClient] = useState(() => new QueryClient());
+
   // Initialize MSW in development mode and wait for it to be ready
   const isMSWReady = useMSW();
 
@@ -27,9 +28,9 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <AppProviders queryClient={queryClient}>
       <RootNavigator />
       <StatusBar style="auto" />
-    </ThemeProvider>
+    </AppProviders>
   );
 }
