@@ -1,13 +1,12 @@
 import { fireEvent, screen } from 'expo-router/testing-library';
 
-import { activityItem, merchantFixture, respondWithActivityPage, respondWithMerchant } from '@/test/msw';
+import { activityItem, bank, merchantFixture } from '@/test/fake-bank';
 import { openActivitySheet } from '@/test/app-driver';
 import { renderApp } from '@/test/render-app';
 
 describe('Home → Activity sheet', () => {
   it('opens the Recent Activity sheet from "show more"', async () => {
-    respondWithMerchant({ ...merchantFixture, activity: [activityItem({ id: 'a' })] });
-    respondWithActivityPage({ items: [], next_cursor: null, has_more: false });
+    bank.merchant = { ...merchantFixture, activity: [activityItem({ id: 'a' })] };
 
     renderApp();
     await openActivitySheet();
@@ -17,8 +16,7 @@ describe('Home → Activity sheet', () => {
   });
 
   it('closes the sheet with Done and returns to Home', async () => {
-    respondWithMerchant({ ...merchantFixture, activity: [activityItem({ id: 'a' })] });
-    respondWithActivityPage({ items: [], next_cursor: null, has_more: false });
+    bank.merchant = { ...merchantFixture, activity: [activityItem({ id: 'a' })] };
 
     renderApp();
     await openActivitySheet();

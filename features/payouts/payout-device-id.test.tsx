@@ -1,14 +1,15 @@
 import { fireEvent, screen } from 'expo-router/testing-library';
 
 import * as ScreenSecurity from '@/modules/screen-security';
-import { respondWithPayout } from '@/test/msw';
+import { bank } from '@/test/fake-bank';
 import { sendPayout } from '@/test/app-driver';
 import { renderApp } from '@/test/render-app';
 
 describe('Device ID on Payouts', () => {
   it('sends the Device ID with the Payout', async () => {
     jest.mocked(ScreenSecurity.getDeviceId).mockResolvedValue('device-123');
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
+    bank.payoutReply = { payoutStatus: 'completed' };
+    const requests = bank.requestsTo('POST /api/payouts');
     renderApp('/payouts');
 
     sendPayout({ amount: '400' });
@@ -20,11 +21,18 @@ describe('Device ID on Payouts', () => {
   });
 
   it.each([
-    ['the native call fails', () => jest.mocked(ScreenSecurity.getDeviceId).mockRejectedValue(new Error('boom'))],
-    ['the platform has no ID yet', () => jest.mocked(ScreenSecurity.getDeviceId).mockResolvedValue(null)],
+    [
+      'the native call fails',
+      () => jest.mocked(ScreenSecurity.getDeviceId).mockRejectedValue(new Error('boom')),
+    ],
+    [
+      'the platform has no ID yet',
+      () => jest.mocked(ScreenSecurity.getDeviceId).mockResolvedValue(null),
+    ],
   ])('still sends the Payout, without a Device ID, when %s', async (_case, arrange) => {
     arrange();
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
+    bank.payoutReply = { payoutStatus: 'completed' };
+    const requests = bank.requestsTo('POST /api/payouts');
     renderApp('/payouts');
 
     sendPayout({ amount: '400' });
@@ -35,7 +43,8 @@ describe('Device ID on Payouts', () => {
 
   it('reads the Device ID from the device only once per session', async () => {
     jest.mocked(ScreenSecurity.getDeviceId).mockResolvedValue('device-123');
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
+    bank.payoutReply = { payoutStatus: 'completed' };
+    const requests = bank.requestsTo('POST /api/payouts');
     renderApp('/payouts');
 
     sendPayout({ amount: '400' });

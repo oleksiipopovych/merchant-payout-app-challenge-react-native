@@ -1,6 +1,6 @@
 import { fireEvent, screen } from 'expo-router/testing-library';
 
-import { activityItem, respondWithActivityPages } from '@/test/msw';
+import { activityItem, bank } from '@/test/fake-bank';
 import { renderApp } from '@/test/render-app';
 
 const firstPage = {
@@ -14,16 +14,21 @@ const secondPage = {
   has_more: false,
 };
 
+/** Cursors the app asked for, in order (`null` = first page). */
+function requested() {
+  return bank.requestsTo('GET /api/merchant/activity').map((url) => url.searchParams.get('cursor'));
+}
+
 async function scrollToEnd() {
   fireEvent(await screen.findByTestId('activity-list'), 'endReached');
 }
 
 describe('Activity sheet infinite scroll', () => {
   it('loads the next page with the returned cursor when the merchant reaches the end', async () => {
-    const requested = respondWithActivityPages([
+    bank.activityPages = [
       [null, firstPage],
       ['act_1', secondPage],
-    ]);
+    ];
 
     renderApp('/activity');
     expect(await screen.findByText('First page item')).toBeOnTheScreen();
@@ -32,14 +37,14 @@ describe('Activity sheet infinite scroll', () => {
 
     expect(await screen.findByText('Second page item')).toBeOnTheScreen();
     expect(screen.getByText('First page item')).toBeOnTheScreen();
-    expect(requested).toEqual([null, 'act_1']);
+    expect(requested()).toEqual([null, 'act_1']);
   });
 
   it('stops requesting once there is no more Activity', async () => {
-    const requested = respondWithActivityPages([
+    bank.activityPages = [
       [null, firstPage],
       ['act_1', secondPage],
-    ]);
+    ];
 
     renderApp('/activity');
     await scrollToEnd();
@@ -48,15 +53,15 @@ describe('Activity sheet infinite scroll', () => {
     await scrollToEnd();
     await scrollToEnd();
 
-    expect(requested).toEqual([null, 'act_1']);
+    expect(requested()).toEqual([null, 'act_1']);
     expect(screen.queryByLabelText('Loading more activity')).not.toBeOnTheScreen();
   });
 
   it('shows a footer indicator while the next page loads', async () => {
-    respondWithActivityPages([
+    bank.activityPages = [
       [null, firstPage],
       ['act_1', secondPage],
-    ]);
+    ];
 
     renderApp('/activity');
     await scrollToEnd();
@@ -67,10 +72,10 @@ describe('Activity sheet infinite scroll', () => {
   });
 
   it('does not request the same page twice while it is still loading', async () => {
-    const requested = respondWithActivityPages([
+    bank.activityPages = [
       [null, firstPage],
-      ['act_1', { page: secondPage, delayMs: 50 }],
-    ]);
+      ['act_1', { ...secondPage, delayMs: 50 }],
+    ];
 
     renderApp('/activity');
     const list = await screen.findByTestId('activity-list');
@@ -79,14 +84,14 @@ describe('Activity sheet infinite scroll', () => {
     fireEvent(list, 'endReached');
 
     expect(await screen.findByText('Second page item')).toBeOnTheScreen();
-    expect(requested).toEqual([null, 'act_1']);
+    expect(requested()).toEqual([null, 'act_1']);
   });
 
   it('keeps loaded items and offers a footer Retry when a later page fails', async () => {
-    respondWithActivityPages([
+    bank.activityPages = [
       [null, firstPage],
       ['act_1', { status: 500 }],
-    ]);
+    ];
 
     renderApp('/activity');
     await scrollToEnd();
@@ -94,10 +99,10 @@ describe('Activity sheet infinite scroll', () => {
     expect(await screen.findByText("Couldn't load more")).toBeOnTheScreen();
     expect(screen.getByText('First page item')).toBeOnTheScreen();
 
-    respondWithActivityPages([
+    bank.activityPages = [
       [null, firstPage],
       ['act_1', secondPage],
-    ]);
+    ];
     fireEvent.press(screen.getByRole('button', { name: 'Retry loading more activity' }));
 
     expect(await screen.findByText('Second page item')).toBeOnTheScreen();
@@ -106,10 +111,10 @@ describe('Activity sheet infinite scroll', () => {
   });
 
   it('does not retry a failed page on its own when the end is reached again', async () => {
-    const requested = respondWithActivityPages([
+    bank.activityPages = [
       [null, firstPage],
       ['act_1', { status: 500 }],
-    ]);
+    ];
 
     renderApp('/activity');
     await scrollToEnd();
@@ -118,7 +123,7 @@ describe('Activity sheet infinite scroll', () => {
     await scrollToEnd();
     await scrollToEnd();
 
-    expect(requested).toEqual([null, 'act_1']);
+    expect(requested()).toEqual([null, 'act_1']);
     expect(screen.getByText("Couldn't load more")).toBeOnTheScreen();
   });
 });

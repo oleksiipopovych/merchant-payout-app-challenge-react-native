@@ -1,32 +1,38 @@
 import { fireEvent, screen } from 'expo-router/testing-library';
 
-import { activityItem, respondWithActivityError, respondWithActivityPage } from '@/test/msw';
+import { activityItem, bank } from '@/test/fake-bank';
 import { renderApp } from '@/test/render-app';
 
 describe('Activity sheet', () => {
   it('loads the first page of Activity and shows type, description, amount, date and status', async () => {
-    const requests = respondWithActivityPage({
-      items: [
-        activityItem({
-          id: 'act_1',
-          type: 'refund',
-          description: 'Refund to Customer MYK',
-          amount: -21970,
-          date: '2026-01-23T12:00:00.000Z',
-          status: 'completed',
-        }),
-        activityItem({
-          id: 'act_2',
-          type: 'deposit',
-          description: 'Payment from Customer RIZ',
-          amount: 17092,
-          date: '2026-01-22T12:00:00.000Z',
-          status: 'pending',
-        }),
+    bank.activityPages = [
+      [
+        null,
+        {
+          items: [
+            activityItem({
+              id: 'act_1',
+              type: 'refund',
+              description: 'Refund to Customer MYK',
+              amount: -21970,
+              date: '2026-01-23T12:00:00.000Z',
+              status: 'completed',
+            }),
+            activityItem({
+              id: 'act_2',
+              type: 'deposit',
+              description: 'Payment from Customer RIZ',
+              amount: 17092,
+              date: '2026-01-22T12:00:00.000Z',
+              status: 'pending',
+            }),
+          ],
+          next_cursor: 'act_2',
+          has_more: true,
+        },
       ],
-      next_cursor: 'act_2',
-      has_more: true,
-    });
+    ];
+    const requests = bank.requestsTo('GET /api/merchant/activity');
 
     renderApp('/activity');
 
@@ -41,7 +47,9 @@ describe('Activity sheet', () => {
   });
 
   it('shows a loading state until the first page arrives', async () => {
-    respondWithActivityPage({ items: [activityItem({ id: 'a' })], next_cursor: null, has_more: false });
+    bank.activityPages = [
+      [null, { items: [activityItem({ id: 'a' })], next_cursor: null, has_more: false }],
+    ];
 
     renderApp('/activity');
 
@@ -51,13 +59,15 @@ describe('Activity sheet', () => {
   });
 
   it('shows a full-screen error with Retry when the first page fails, and recovers', async () => {
-    respondWithActivityError(500);
+    bank.activityPages = [[null, { status: 500 }]];
 
     renderApp('/activity');
 
     expect(await screen.findByText("We couldn't load your activity.")).toBeOnTheScreen();
 
-    respondWithActivityPage({ items: [activityItem({ id: 'a' })], next_cursor: null, has_more: false });
+    bank.activityPages = [
+      [null, { items: [activityItem({ id: 'a' })], next_cursor: null, has_more: false }],
+    ];
     fireEvent.press(screen.getByRole('button', { name: 'Retry' }));
 
     expect(await screen.findAllByLabelText(/^Activity item: /)).toHaveLength(1);

@@ -1,22 +1,16 @@
 import { act, fireEvent, screen } from 'expo-router/testing-library';
 
 import { renderApp } from '@/test/render-app';
-import {
-  respondWithMalformedMerchant,
-  respondWithMerchant,
-  respondWithMerchantError,
-  merchantFixture,
-  activityItem,
-} from '@/test/msw';
+import { activityItem, bank, merchantFixture } from '@/test/fake-bank';
 
 describe('Home', () => {
   it('shows the Available and Pending Balance in the Account Currency', async () => {
-    respondWithMerchant({
+    bank.merchant = {
       available_balance: 500000,
       pending_balance: 25000,
       currency: 'GBP',
       activity: [],
-    });
+    };
 
     renderApp();
 
@@ -25,8 +19,6 @@ describe('Home', () => {
   });
 
   it('shows a loading indicator until the balances arrive', async () => {
-    respondWithMerchant();
-
     renderApp();
 
     expect(screen.getByLabelText('Loading balances')).toBeOnTheScreen();
@@ -35,13 +27,13 @@ describe('Home', () => {
   });
 
   it('shows an error with Retry when the balances fail to load, and recovers on Retry', async () => {
-    respondWithMerchantError(500);
+    bank.merchant = { status: 500 };
 
     renderApp();
 
     expect(await screen.findByText("We couldn't load your balances.")).toBeOnTheScreen();
 
-    respondWithMerchant();
+    bank.merchant = merchantFixture;
     fireEvent.press(screen.getByRole('button', { name: 'Retry' }));
 
     expect(await screen.findByLabelText('Available balance £5,000.00')).toBeOnTheScreen();
@@ -49,7 +41,7 @@ describe('Home', () => {
   });
 
   it('shows the error state rather than broken figures when the response is malformed', async () => {
-    respondWithMalformedMerchant();
+    bank.merchant = { malformed: { available_balance: 'lots', currency: 'USD' } };
 
     renderApp();
 
@@ -58,26 +50,48 @@ describe('Home', () => {
   });
 
   it('refreshes the balances when the merchant pulls down', async () => {
-    respondWithMerchant();
     renderApp();
     expect(await screen.findByLabelText('Available balance £5,000.00')).toBeOnTheScreen();
 
-    respondWithMerchant({ ...merchantFixture, available_balance: 600000 });
+    bank.merchant = { ...merchantFixture, available_balance: 600000 };
     await act(() => screen.getByTestId('home-scroll').props.refreshControl.props.onRefresh());
 
     expect(await screen.findByLabelText('Available balance £6,000.00')).toBeOnTheScreen();
   });
 
   it('lists the three most recent Activity Items with description and signed amount', async () => {
-    respondWithMerchant({
+    bank.merchant = {
       ...merchantFixture,
       activity: [
-        activityItem({ id: 'oldest', date: '2026-01-19T09:00:00.000Z', description: 'Monthly service fee', type: 'fee', amount: -2500 }),
-        activityItem({ id: 'newest', date: '2026-01-23T16:00:00.000Z', description: 'Refund to Customer MYK', type: 'refund', amount: -21970 }),
-        activityItem({ id: 'third', date: '2026-01-21T12:00:00.000Z', description: 'Payment from Customer RIZ', amount: 17092 }),
-        activityItem({ id: 'second', date: '2026-01-22T08:00:00.000Z', description: 'Payout to Bank Account ****0117', type: 'payout', amount: -187515 }),
+        activityItem({
+          id: 'oldest',
+          date: '2026-01-19T09:00:00.000Z',
+          description: 'Monthly service fee',
+          type: 'fee',
+          amount: -2500,
+        }),
+        activityItem({
+          id: 'newest',
+          date: '2026-01-23T16:00:00.000Z',
+          description: 'Refund to Customer MYK',
+          type: 'refund',
+          amount: -21970,
+        }),
+        activityItem({
+          id: 'third',
+          date: '2026-01-21T12:00:00.000Z',
+          description: 'Payment from Customer RIZ',
+          amount: 17092,
+        }),
+        activityItem({
+          id: 'second',
+          date: '2026-01-22T08:00:00.000Z',
+          description: 'Payout to Bank Account ****0117',
+          type: 'payout',
+          amount: -187515,
+        }),
       ],
-    });
+    };
 
     renderApp();
 
@@ -91,7 +105,7 @@ describe('Home', () => {
   });
 
   it('offers a "show more" button under the recent Activity', async () => {
-    respondWithMerchant({ ...merchantFixture, activity: [activityItem({ id: 'a' })] });
+    bank.merchant = { ...merchantFixture, activity: [activityItem({ id: 'a' })] };
 
     renderApp();
 

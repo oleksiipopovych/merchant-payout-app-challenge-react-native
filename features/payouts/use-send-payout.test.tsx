@@ -6,7 +6,7 @@ import { renderHook } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
-import { respondWithPayout } from '@/test/msw';
+import { bank } from '@/test/fake-bank';
 
 import { useSendPayout } from './use-send-payout';
 
@@ -22,7 +22,8 @@ function renderSendPayout() {
 
 describe('useSendPayout', () => {
   it('sends at most one Payout at a time: a second send while one is running shares its outcome', async () => {
-    const requests = respondWithPayout({ payoutStatus: 'completed', delayMs: 50 });
+    bank.payoutReply = { payoutStatus: 'completed', delayMs: 50 };
+    const requests = bank.requestsTo('POST /api/payouts');
     const { send } = renderSendPayout().current;
 
     const first = send(draft);
@@ -34,7 +35,8 @@ describe('useSendPayout', () => {
   });
 
   it('allows the next Payout once the previous one has finished', async () => {
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
+    bank.payoutReply = { payoutStatus: 'completed' };
+    const requests = bank.requestsTo('POST /api/payouts');
     const { send } = renderSendPayout().current;
 
     await send(draft);

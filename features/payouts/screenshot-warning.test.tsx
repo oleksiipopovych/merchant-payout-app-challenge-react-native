@@ -1,13 +1,13 @@
 import { act, fireEvent, screen } from 'expo-router/testing-library';
 import { Alert, type AlertButton } from 'react-native';
 
-import { respondWithMerchant } from '@/test/msw';
 import { goToTab } from '@/test/app-driver';
 import { renderApp } from '@/test/render-app';
 import { screenSecurityMock } from '@/test/screen-security';
 
 const TITLE = 'Security Reminder';
-const MESSAGE = 'Please keep your financial data private. Screenshots may contain sensitive information.';
+const MESSAGE =
+  'Please keep your financial data private. Screenshots may contain sensitive information.';
 
 function takeScreenshot() {
   act(() => {
@@ -48,7 +48,6 @@ describe('Screenshot warning', () => {
   });
 
   it('ignores screenshots taken on other tabs, even after Payouts has been visited', async () => {
-    respondWithMerchant();
     renderApp('/payouts');
 
     goToTab('Home');
@@ -59,7 +58,6 @@ describe('Screenshot warning', () => {
   });
 
   it('stops listening when Payouts loses focus, so switching tabs never stacks listeners', async () => {
-    respondWithMerchant();
     renderApp('/payouts');
     expect(screenSecurityMock().activeScreenshotListenerCount()).toBe(1);
 

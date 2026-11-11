@@ -1,7 +1,7 @@
 import { fireEvent, screen } from 'expo-router/testing-library';
 
 import * as ScreenSecurity from '@/modules/screen-security';
-import { respondWithPayout } from '@/test/msw';
+import { bank } from '@/test/fake-bank';
 import { sendPayout } from '@/test/app-driver';
 import { renderApp } from '@/test/render-app';
 
@@ -11,7 +11,8 @@ function nativeError(code: string) {
 
 describe('Biometric Check for High-value Payouts', () => {
   it('runs the Biometric Check before sending a High-value Payout, and sends it on a pass', async () => {
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
+    bank.payoutReply = { payoutStatus: 'completed' };
+    const requests = bank.requestsTo('POST /api/payouts');
     let requestsSentBeforeCheck: number | undefined;
     jest.mocked(ScreenSecurity.isBiometricAuthenticated).mockImplementation(async () => {
       requestsSentBeforeCheck = requests.length;
@@ -27,25 +28,32 @@ describe('Biometric Check for High-value Payouts', () => {
     expect(requests).toHaveLength(1);
   });
 
-  it.each(['1000', '1000.00', '400'])('sends a %s GBP Payout without a Biometric Check', async (amount) => {
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
-    renderApp('/payouts');
+  it.each(['1000', '1000.00', '400'])(
+    'sends a %s GBP Payout without a Biometric Check',
+    async (amount) => {
+      bank.payoutReply = { payoutStatus: 'completed' };
+      const requests = bank.requestsTo('POST /api/payouts');
+      renderApp('/payouts');
 
-    sendPayout({ amount });
+      sendPayout({ amount });
 
-    expect(await screen.findByRole('header', { name: 'Payout Completed' })).toBeOnTheScreen();
-    expect(ScreenSecurity.isBiometricAuthenticated).not.toHaveBeenCalled();
-    expect(requests).toHaveLength(1);
-  });
+      expect(await screen.findByRole('header', { name: 'Payout Completed' })).toBeOnTheScreen();
+      expect(ScreenSecurity.isBiometricAuthenticated).not.toHaveBeenCalled();
+      expect(requests).toHaveLength(1);
+    },
+  );
 
   it('aborts the Payout when the Biometric Check fails, and keeps the details for Try Again', async () => {
     jest.mocked(ScreenSecurity.isBiometricAuthenticated).mockResolvedValue(false);
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
+    bank.payoutReply = { payoutStatus: 'completed' };
+    const requests = bank.requestsTo('POST /api/payouts');
     renderApp('/payouts');
 
     sendPayout({ amount: '1500' });
 
-    expect(await screen.findByRole('header', { name: 'Unable to Process Payout' })).toBeOnTheScreen();
+    expect(
+      await screen.findByRole('header', { name: 'Unable to Process Payout' }),
+    ).toBeOnTheScreen();
     expect(screen.getByText('Biometric authentication was cancelled.')).toBeOnTheScreen();
     expect(requests).toHaveLength(0);
 
@@ -58,7 +66,8 @@ describe('Biometric Check for High-value Payouts', () => {
     jest
       .mocked(ScreenSecurity.isBiometricAuthenticated)
       .mockRejectedValue(nativeError('E_BIOMETRICS_NOT_ENROLLED'));
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
+    bank.payoutReply = { payoutStatus: 'completed' };
+    const requests = bank.requestsTo('POST /api/payouts');
     renderApp('/payouts');
 
     sendPayout({ amount: '1500' });
@@ -76,7 +85,8 @@ describe('Biometric Check for High-value Payouts', () => {
     jest
       .mocked(ScreenSecurity.isBiometricAuthenticated)
       .mockRejectedValue(nativeError('E_BIOMETRICS_UNAVAILABLE'));
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
+    bank.payoutReply = { payoutStatus: 'completed' };
+    const requests = bank.requestsTo('POST /api/payouts');
     renderApp('/payouts');
 
     sendPayout({ amount: '1500' });
@@ -86,8 +96,11 @@ describe('Biometric Check for High-value Payouts', () => {
   });
 
   it('never sends a High-value Payout when the Biometric Check errors unexpectedly', async () => {
-    jest.mocked(ScreenSecurity.isBiometricAuthenticated).mockRejectedValue(new Error('activity gone'));
-    const requests = respondWithPayout({ payoutStatus: 'completed' });
+    jest
+      .mocked(ScreenSecurity.isBiometricAuthenticated)
+      .mockRejectedValue(new Error('activity gone'));
+    bank.payoutReply = { payoutStatus: 'completed' };
+    const requests = bank.requestsTo('POST /api/payouts');
     renderApp('/payouts');
 
     sendPayout({ amount: '1500' });
