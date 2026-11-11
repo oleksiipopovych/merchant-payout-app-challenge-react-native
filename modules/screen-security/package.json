@@ -1,0 +1,10 @@
+{
+  "name": "screen-security",
+  "version": "0.1.0",
+  "description": "Device identity, biometrics and screenshot events for the merchant payout app",
+  "main": "index.ts",
+  "license": "UNLICENSED",
+  "author": "",
+  "homepage": "",
+  "private": true
+}

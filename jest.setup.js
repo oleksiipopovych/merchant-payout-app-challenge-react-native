@@ -11,3 +11,9 @@ afterAll(() => server.close());
 
 // The provided MSW handlers log every request/response; keep test output readable.
 jest.spyOn(console, 'log').mockImplementation(() => {});
+
+// The ScreenSecurity native module doesn't exist under Jest; use its scriptable stand-in.
+jest.mock('@/modules/screen-security');
+beforeEach(() => {
+  jest.requireMock('@/modules/screen-security').resetScreenSecurityMock();
+});

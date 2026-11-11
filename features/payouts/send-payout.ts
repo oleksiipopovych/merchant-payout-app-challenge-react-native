@@ -10,10 +10,13 @@ export type PayoutOutcome =
   | { kind: 'unconfirmed' };
 
 /** Sends a Payout and classifies the answer into a Payout outcome. Never throws. */
-export async function sendPayout(draft: PayoutDraft): Promise<PayoutOutcome> {
+export async function sendPayout(
+  draft: PayoutDraft,
+  deviceId: string | undefined,
+): Promise<PayoutOutcome> {
   let payout: PayoutResponse;
   try {
-    payout = await createPayout(draft);
+    payout = await createPayout(deviceId ? { ...draft, device_id: deviceId } : draft);
   } catch (error) {
     return classifyError(error);
   }

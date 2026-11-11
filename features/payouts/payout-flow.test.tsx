@@ -51,7 +51,8 @@ describe('Payout flow', () => {
 
     expect(await screen.findByRole('header', { name: 'Payout Completed' })).toBeOnTheScreen();
     expect(screen.getByText('Your payout of £400.00 has been processed successfully.')).toBeOnTheScreen();
-    expect(requests).toEqual([{ amount: 40000, currency: 'GBP', iban: 'GB29NWBK60161331926819' }]);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ amount: 40000, currency: 'GBP', iban: 'GB29NWBK60161331926819' });
   });
 
   it('shows Failed when the Payout was created but did not succeed', async () => {

@@ -8,8 +8,8 @@
 
 - [ ] The module builds and runs on iOS Simulator and Android Emulator via a dev build
 - [ ] `getDeviceId()` returns a stable identifier per install on both platforms
-- [ ] Device ID is fetched at most once per app session
-- [ ] Payout request bodies include `device_id` when available
-- [ ] When the Device ID can't be read, the Payout is sent without `device_id` and the merchant sees no error
-- [ ] Screen tests assert `device_id` present / absent in the request body using the module mock
-- [ ] Run instructions for the dev build are noted for ticket 10
+- [x] Device ID is fetched at most once per app session
+- [x] Payout request bodies include `device_id` when available
+- [x] When the Device ID can't be read, the Payout is sent without `device_id` and the merchant sees no error
+- [x] Screen tests assert `device_id` present / absent in the request body using the module mock
+- [x] Run instructions for the dev build are noted for ticket 10

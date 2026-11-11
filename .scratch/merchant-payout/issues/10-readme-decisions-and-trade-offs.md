@@ -11,3 +11,4 @@
 - [ ] ADRs and GLOSSARY.md are linked
 - [ ] Instructions verified from a clean clone
 - [ ] The provided POST /api/payouts mock handler was given the same 500–2000ms latency as the GET handlers so the sending state is visible
+- [ ] Run instructions: the app needs a dev build (`npx expo run:ios` / `npx expo run:android`), not Expo Go, because of the local ScreenSecurity module

@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { activityQueryKey } from '@/features/activity/use-activity-pages';
 import { merchantQueryKey } from '@/features/home/use-merchant';
 
+import { readDeviceId } from './device-id';
 import { PayoutConfirmation } from './payout-confirmation';
 import { initialPayoutFormValues, type PayoutDraft, type PayoutFormValues } from './payout-draft';
 import { PayoutForm } from './payout-form';
@@ -32,7 +33,7 @@ export function PayoutsScreen() {
     if (inFlight.current) return;
     inFlight.current = true;
     setFlow({ step: 'submitting', draft });
-    const outcome = await sendPayout(draft);
+    const outcome = await sendPayout(draft, await readDeviceId(queryClient));
     inFlight.current = false;
     setFlow({ step: 'result', outcome });
     if (outcome.kind !== 'rejected') {
