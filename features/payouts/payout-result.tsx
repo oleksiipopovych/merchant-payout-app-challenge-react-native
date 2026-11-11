@@ -5,7 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatMoney } from '@/lib/money/format';
 
-import type { PayoutOutcome } from './send-payout';
+import type { PayoutOutcome } from './use-send-payout';
 
 type RejectionReason = Extract<PayoutOutcome, { kind: 'rejected' }>['reason'];
 

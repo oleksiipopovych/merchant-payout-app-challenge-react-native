@@ -73,6 +73,10 @@ _Avoid_: failed, declined
 A Rejection because the merchant cannot cover the Payout; only the server decides this.
 _Avoid_: not enough balance, overdraft
 
+**Not Sent**:
+The Payout was stopped on the device before being sent, so no request was made, e.g. after a failed Biometric Check or because biometrics aren't set up.
+_Avoid_: cancelled, aborted, rejected
+
 **Unconfirmed**:
 The Payout was sent but no answer came back, so whether it was created is unknown.
 _Avoid_: failed, rejected, network error
