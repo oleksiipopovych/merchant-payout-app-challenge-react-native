@@ -6,13 +6,13 @@
 
 **Status:** ready-for-agent
 
-- [ ] Confirmation shows amount, Payout Currency and masked IBAN; accessible label reads "IBAN ending NNNN"
-- [ ] Cancel returns to the form with all fields preserved
-- [ ] While sending, Confirm shows progress and Cancel/dismiss are disabled; a double press sends one request
-- [ ] 201 completed → Completed screen with amount and currency
-- [ ] 201 failed (e.g. 12.99) → Failed screen
-- [ ] 400 (888.88) → Insufficient Funds message
-- [ ] 503 (999.99) → general Rejected message
-- [ ] Network error → Unconfirmed message advising to check Activity before retrying
-- [ ] Done after Completed resets the form and refreshes merchant data and Activity
-- [ ] Screen tests cover every outcome, Cancel, and the double-press lock
+- [x] Confirmation shows amount, Payout Currency and masked IBAN; accessible label reads "IBAN ending NNNN"
+- [x] Cancel returns to the form with all fields preserved
+- [x] While sending, Confirm shows progress and Cancel/dismiss are disabled; a double press sends one request
+- [x] 201 completed → Completed screen with amount and currency
+- [x] 201 failed (e.g. 12.99) → Failed screen
+- [x] 400 (888.88) → Insufficient Funds message
+- [x] 503 (999.99) → general Rejected message
+- [x] Network error → Unconfirmed message advising to check Activity before retrying
+- [x] Done after Completed resets the form and refreshes merchant data and Activity
+- [x] Screen tests cover every outcome, Cancel, and the double-press lock

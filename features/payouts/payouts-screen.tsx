@@ -1,12 +1,52 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { activityQueryKey } from '@/features/activity/use-activity-pages';
+import { merchantQueryKey } from '@/features/home/use-merchant';
 
+import { PayoutConfirmation } from './payout-confirmation';
+import { initialPayoutFormValues, type PayoutDraft, type PayoutFormValues } from './payout-draft';
 import { PayoutForm } from './payout-form';
+import { PayoutResult } from './payout-result';
+import { sendPayout, type PayoutOutcome } from './send-payout';
+
+type PayoutStep =
+  | { step: 'editing' }
+  | { step: 'confirming'; draft: PayoutDraft }
+  | { step: 'submitting'; draft: PayoutDraft }
+  | { step: 'result'; outcome: PayoutOutcome };
 
 export function PayoutsScreen() {
+  const [values, setValues] = useState<PayoutFormValues>(initialPayoutFormValues);
+  const [flow, setFlow] = useState<PayoutStep>({ step: 'editing' });
+  const queryClient = useQueryClient();
+  // Guards against a second tap landing before the locked summary has re-rendered;
+  // the API has no idempotency key, so this is the only protection against a duplicate Payout.
+  const inFlight = useRef(false);
+
+  const submit = async (draft: PayoutDraft) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setFlow({ step: 'submitting', draft });
+    const outcome = await sendPayout(draft);
+    inFlight.current = false;
+    setFlow({ step: 'result', outcome });
+    if (outcome.kind !== 'rejected') {
+      // A created (or possibly created) Payout changes balances and Activity.
+      queryClient.invalidateQueries({ queryKey: merchantQueryKey });
+      queryClient.invalidateQueries({ queryKey: activityQueryKey });
+    }
+  };
+
+  const createAnother = () => {
+    setValues(initialPayoutFormValues);
+    setFlow({ step: 'editing' });
+  };
+
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.screen} edges={['top']}>
@@ -18,13 +58,33 @@ export function PayoutsScreen() {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag">
             <ThemedText type="title" accessibilityRole="header" style={styles.title}>
-              Send Payout
+              {flow.step === 'result' ? 'Payout' : 'Send Payout'}
             </ThemedText>
-            {/* Confirmation and sending arrive in ticket 06. */}
-            <PayoutForm onConfirm={() => {}} />
+            {flow.step === 'result' ? (
+              <PayoutResult
+                outcome={flow.outcome}
+                onCreateAnother={createAnother}
+                onBackToForm={() => setFlow({ step: 'editing' })}
+              />
+            ) : (
+              <PayoutForm
+                values={values}
+                onChange={setValues}
+                onConfirm={(draft) => setFlow({ step: 'confirming', draft })}
+              />
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {(flow.step === 'confirming' || flow.step === 'submitting') && (
+        <PayoutConfirmation
+          draft={flow.draft}
+          submitting={flow.step === 'submitting'}
+          onCancel={() => setFlow({ step: 'editing' })}
+          onConfirm={() => submit(flow.draft)}
+        />
+      )}
     </ThemedView>
   );
 }

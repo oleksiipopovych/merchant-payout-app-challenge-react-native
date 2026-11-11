@@ -7,7 +7,6 @@ import { TextField } from '@/components/text-field';
 import type { Currency } from '@/types/api';
 
 import {
-  initialPayoutFormValues,
   validatePayoutDraft,
   type PayoutDraft,
   type PayoutFormField,
@@ -17,11 +16,12 @@ import {
 const PAYOUT_CURRENCIES = ['GBP', 'EUR'] as const satisfies readonly Currency[];
 
 type PayoutFormProps = {
+  values: PayoutFormValues;
+  onChange: (values: PayoutFormValues) => void;
   onConfirm: (draft: PayoutDraft) => void;
 };
 
-export function PayoutForm({ onConfirm }: PayoutFormProps) {
-  const [values, setValues] = useState<PayoutFormValues>(initialPayoutFormValues);
+export function PayoutForm({ values, onChange, onConfirm }: PayoutFormProps) {
   const [touched, setTouched] = useState<Partial<Record<PayoutFormField, boolean>>>({});
   const validation = validatePayoutDraft(values);
 
@@ -32,7 +32,7 @@ export function PayoutForm({ onConfirm }: PayoutFormProps) {
     setTouched((current) => ({ ...current, [field]: true }));
 
   const setField = <K extends keyof PayoutFormValues>(field: K, value: PayoutFormValues[K]) =>
-    setValues((current) => ({ ...current, [field]: value }));
+    onChange({ ...values, [field]: value });
 
   return (
     <View style={styles.form}>

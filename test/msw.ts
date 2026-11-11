@@ -8,6 +8,8 @@ import { API_BASE_URL } from '@/constants';
 import { server } from '@/mocks/server.test';
 import type {
   ActivityItem,
+  CreatePayoutRequest,
+  PayoutResponse,
   MerchantDataResponse,
   PaginatedActivityResponse,
 } from '@/types/api';
@@ -99,4 +101,35 @@ export function respondWithActivityPages(
     }),
   );
   return requested;
+}
+
+type PayoutReply =
+  | { payoutStatus: PayoutResponse['status']; delayMs?: number }
+  | { httpStatus: number; error: string }
+  | { networkError: true };
+
+/** Answers POST /api/payouts with `reply`; returns the request bodies received, in order. */
+export function respondWithPayout(reply: PayoutReply): CreatePayoutRequest[] {
+  const bodies: CreatePayoutRequest[] = [];
+  server.use(
+    http.post(`${API_BASE_URL}/api/payouts`, async ({ request }) => {
+      const body = (await request.json()) as CreatePayoutRequest;
+      bodies.push(body);
+      if ('networkError' in reply) return HttpResponse.error();
+      if ('httpStatus' in reply) {
+        return HttpResponse.json({ error: reply.error }, { status: reply.httpStatus });
+      }
+      if (reply.delayMs) await delay(reply.delayMs);
+      const payout: PayoutResponse = {
+        id: 'payout_test',
+        status: reply.payoutStatus,
+        amount: body.amount,
+        currency: body.currency,
+        iban: body.iban,
+        created_at: '2026-01-23T12:00:00.000Z',
+      };
+      return HttpResponse.json(payout, { status: 201 });
+    }),
+  );
+  return bodies;
 }

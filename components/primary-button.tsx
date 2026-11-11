@@ -5,12 +5,20 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 type PrimaryButtonProps = {
   title: string;
+  /** Accessible name when it should differ from the visible title. */
+  accessibilityLabel?: string;
   onPress: () => void;
   disabled?: boolean;
   busy?: boolean;
 };
 
-export function PrimaryButton({ title, onPress, disabled = false, busy = false }: PrimaryButtonProps) {
+export function PrimaryButton({
+  title,
+  accessibilityLabel,
+  onPress,
+  disabled = false,
+  busy = false,
+}: PrimaryButtonProps) {
   const primary = useThemeColor({}, 'primary');
   const onPrimary = useThemeColor({}, 'onPrimary');
   const disabledBackground = useThemeColor({}, 'disabled');
@@ -20,7 +28,7 @@ export function PrimaryButton({ title, onPress, disabled = false, busy = false }
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={accessibilityLabel ?? title}
       accessibilityState={{ disabled: inactive, busy }}
       disabled={inactive}
       onPress={onPress}

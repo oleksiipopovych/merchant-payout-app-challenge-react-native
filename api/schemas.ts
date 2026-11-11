@@ -9,6 +9,7 @@ import type {
   Currency,
   MerchantDataResponse,
   PaginatedActivityResponse,
+  PayoutResponse,
 } from '@/types/api';
 
 export const currencySchema = z.enum(['GBP', 'EUR']) satisfies z.ZodType<Currency>;
@@ -35,3 +36,12 @@ export const paginatedActivitySchema = z.object({
   next_cursor: z.string().nullable(),
   has_more: z.boolean(),
 }) satisfies z.ZodType<PaginatedActivityResponse>;
+
+export const payoutResponseSchema = z.object({
+  id: z.string(),
+  status: z.enum(['pending', 'processing', 'completed', 'failed']),
+  amount: z.number().int(),
+  currency: currencySchema,
+  iban: z.string(),
+  created_at: z.string(),
+}) satisfies z.ZodType<PayoutResponse>;

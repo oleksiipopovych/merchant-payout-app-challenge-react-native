@@ -5,9 +5,14 @@
 import type { z } from 'zod';
 
 import { API_BASE_URL } from '@/constants';
-import type { MerchantDataResponse, PaginatedActivityResponse } from '@/types/api';
+import type {
+  CreatePayoutRequest,
+  MerchantDataResponse,
+  PaginatedActivityResponse,
+  PayoutResponse,
+} from '@/types/api';
 
-import { merchantDataSchema, paginatedActivitySchema } from './schemas';
+import { merchantDataSchema, paginatedActivitySchema, payoutResponseSchema } from './schemas';
 
 export type ApiErrorReason =
   | { kind: 'http'; status: number; message: string }
@@ -62,4 +67,11 @@ export function getActivityPage(
   const params = new URLSearchParams({ limit: String(limit) });
   if (cursor !== null) params.set('cursor', cursor);
   return request(`/api/merchant/activity?${params}`, paginatedActivitySchema);
+}
+
+export function createPayout(payout: CreatePayoutRequest): Promise<PayoutResponse> {
+  return request('/api/payouts', payoutResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(payout),
+  });
 }
