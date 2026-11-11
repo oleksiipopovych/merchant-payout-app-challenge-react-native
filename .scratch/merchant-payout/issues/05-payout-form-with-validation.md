@@ -6,12 +6,12 @@
 
 **Status:** ready-for-agent
 
-- [ ] Amount input parses exactly to Minor Units without floating-point maths ("1,5" → 150; "1.005" rejected)
-- [ ] Confirm is disabled for empty, zero or negative amounts and for an invalid IBAN
-- [ ] README valid example (GB29NWBK60161331926819) passes; README invalid example (FR1212345123451234567A12310131231231231) fails
-- [ ] IBAN errors explain the reason (unsupported country, wrong length, invalid characters, bad checksum)
-- [ ] Errors appear only after a field's first blur
-- [ ] Currency select works with touch and screen readers; default GBP
+- [x] Amount input parses exactly to Minor Units without floating-point maths ("1,5" → 150; "1.005" rejected)
+- [x] Confirm is disabled for empty, zero or negative amounts and for an invalid IBAN
+- [x] README valid example (GB29NWBK60161331926819) passes; README invalid example (FR1212345123451234567A12310131231231231) fails
+- [x] IBAN errors explain the reason (unsupported country, wrong length, invalid characters, bad checksum)
+- [x] Errors appear only after a field's first blur
+- [x] Currency select works with touch and screen readers; default GBP
 - [ ] Keyboard never hides the focused field or Confirm; tap outside dismisses
-- [ ] All fields, errors and buttons have accessible labels
-- [ ] Table-driven unit tests for money parsing, IBAN validation and the draft schema; screen test for Confirm enable/disable
+- [x] All fields, errors and buttons have accessible labels
+- [x] Table-driven unit tests for money parsing, IBAN validation and the draft schema; screen test for Confirm enable/disable

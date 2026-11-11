@@ -19,6 +19,12 @@ export const Colors = {
     positive: '#1A7F37',
     negative: '#CF222E',
     warning: '#9A6700',
+    primary: '#0a7ea4',
+    onPrimary: '#ffffff',
+    border: '#D0D7DE',
+    surface: '#F6F8FA',
+    disabled: '#E1E4E8',
+    disabledText: '#8C959F',
   },
   dark: {
     text: '#ECEDEE',
@@ -30,6 +36,12 @@ export const Colors = {
     positive: '#3FB950',
     negative: '#FF7B72',
     warning: '#D29922',
+    primary: '#0a7ea4',
+    onPrimary: '#ffffff',
+    border: '#3D444D',
+    surface: '#1F2328',
+    disabled: '#2D333B',
+    disabledText: '#768390',
   },
 };
 
