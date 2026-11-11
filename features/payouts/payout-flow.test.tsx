@@ -1,27 +1,21 @@
 import { fireEvent, screen } from 'expo-router/testing-library';
 
 import { merchantFixture, respondWithMerchant, respondWithPayout } from '@/test/msw';
+import {
+  confirmPayout,
+  fillPayoutForm,
+  goToTab,
+  reviewPayout,
+  sendPayout,
+} from '@/test/app-driver';
 import { renderApp } from '@/test/render-app';
-
-function fillForm({ amount = '400', currency = 'GBP', iban = 'GB29NWBK60161331926819' } = {}) {
-  fireEvent.changeText(screen.getByLabelText('Amount'), amount);
-  if (currency !== 'GBP') {
-    fireEvent.press(screen.getByRole('combobox', { name: 'Currency' }));
-    fireEvent.press(screen.getByRole('menuitem', { name: currency }));
-  }
-  fireEvent.changeText(screen.getByLabelText('IBAN'), iban);
-  fireEvent.press(screen.getByRole('button', { name: 'Confirm' }));
-}
-
-function confirmPayout() {
-  fireEvent.press(screen.getByRole('button', { name: 'Confirm payout' }));
-}
 
 describe('Payout flow', () => {
   it('summarises the Payout with a masked Destination IBAN before anything is sent', () => {
     renderApp('/payouts');
 
-    fillForm({ amount: '1500.5', currency: 'EUR', iban: 'GB29 NWBK 6016 1331 9268 19' });
+    fillPayoutForm({ amount: '1500.5', currency: 'EUR', iban: 'GB29 NWBK 6016 1331 9268 19' });
+    reviewPayout();
 
     expect(screen.getByRole('header', { name: 'Confirm Payout' })).toBeOnTheScreen();
     expect(screen.getByLabelText('Amount: €1,500.50')).toBeOnTheScreen();
@@ -33,7 +27,8 @@ describe('Payout flow', () => {
   it('returns to the filled-in form when the merchant cancels the summary', () => {
     renderApp('/payouts');
 
-    fillForm({ amount: '400', iban: 'GB29NWBK60161331926819' });
+    fillPayoutForm({ amount: '400', iban: 'GB29NWBK60161331926819' });
+    reviewPayout();
     fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(screen.queryByRole('header', { name: 'Confirm Payout' })).not.toBeOnTheScreen();
@@ -46,8 +41,7 @@ describe('Payout flow', () => {
     const requests = respondWithPayout({ payoutStatus: 'completed' });
     renderApp('/payouts');
 
-    fillForm({ amount: '400', iban: 'gb29 nwbk 6016 1331 9268 19' });
-    confirmPayout();
+    sendPayout({ amount: '400', iban: 'gb29 nwbk 6016 1331 9268 19' });
 
     expect(await screen.findByRole('header', { name: 'Payout Completed' })).toBeOnTheScreen();
     expect(screen.getByText('Your payout of £400.00 has been processed successfully.')).toBeOnTheScreen();
@@ -59,8 +53,7 @@ describe('Payout flow', () => {
     respondWithPayout({ payoutStatus: 'failed' });
     renderApp('/payouts');
 
-    fillForm({ amount: '12.99' });
-    confirmPayout();
+    sendPayout({ amount: '12.99' });
 
     expect(await screen.findByRole('header', { name: 'Payout Failed' })).toBeOnTheScreen();
     expect(
@@ -73,8 +66,7 @@ describe('Payout flow', () => {
     respondWithPayout({ httpStatus: 400, error: 'Insufficient funds' });
     renderApp('/payouts');
 
-    fillForm({ amount: '888.88' });
-    confirmPayout();
+    sendPayout({ amount: '888.88' });
 
     expect(await screen.findByRole('header', { name: 'Unable to Process Payout' })).toBeOnTheScreen();
     expect(screen.getByText('Insufficient funds.')).toBeOnTheScreen();
@@ -90,8 +82,7 @@ describe('Payout flow', () => {
     respondWithPayout({ httpStatus, error });
     renderApp('/payouts');
 
-    fillForm({ amount: '999.99' });
-    confirmPayout();
+    sendPayout({ amount: '999.99' });
 
     expect(await screen.findByRole('header', { name: 'Unable to Process Payout' })).toBeOnTheScreen();
     expect(screen.getByText(message)).toBeOnTheScreen();
@@ -102,8 +93,7 @@ describe('Payout flow', () => {
     respondWithPayout({ networkError: true });
     renderApp('/payouts');
 
-    fillForm({ amount: '400' });
-    confirmPayout();
+    sendPayout({ amount: '400' });
 
     expect(await screen.findByRole('header', { name: 'Payout Not Confirmed' })).toBeOnTheScreen();
     expect(
@@ -119,8 +109,7 @@ describe('Payout flow', () => {
     respondWithPayout({ httpStatus: 503, error: 'Service temporarily unavailable' });
     renderApp('/payouts');
 
-    fillForm({ amount: '999.99', currency: 'EUR', iban: 'GB29NWBK60161331926819' });
-    confirmPayout();
+    sendPayout({ amount: '999.99', currency: 'EUR', iban: 'GB29NWBK60161331926819' });
     fireEvent.press(await screen.findByRole('button', { name: 'Try Again' }));
 
     expect(screen.getByLabelText('Amount')).toHaveDisplayValue('999.99');
@@ -135,16 +124,15 @@ describe('Payout flow', () => {
     renderApp('/');
     expect(await screen.findByLabelText('Available balance £5,000.00')).toBeOnTheScreen();
 
-    fireEvent.press(screen.getByRole('button', { name: /^Payouts, tab/ }));
-    fillForm({ amount: '400' });
-    confirmPayout();
+    goToTab('Payouts');
+    sendPayout({ amount: '400' });
     respondWithMerchant({ ...merchantFixture, available_balance: 460000 });
     fireEvent.press(await screen.findByRole('button', { name: 'Create Another Payout' }));
 
     expect(screen.getByLabelText('Amount')).toHaveDisplayValue('');
     expect(screen.getByLabelText('IBAN')).toHaveDisplayValue('');
 
-    fireEvent.press(screen.getByRole('button', { name: /^Home, tab/ }));
+    goToTab('Home');
     expect(await screen.findByLabelText('Available balance £4,600.00')).toBeOnTheScreen();
   });
 
@@ -154,13 +142,14 @@ describe('Payout flow', () => {
     renderApp('/');
     expect(await screen.findByLabelText('Available balance £5,000.00')).toBeOnTheScreen();
 
-    fireEvent.press(screen.getByRole('button', { name: /^Payouts, tab/ }));
-    fillForm({ amount: '400' });
+    goToTab('Payouts');
+    fillPayoutForm({ amount: '400' });
+    reviewPayout();
     respondWithMerchant({ ...merchantFixture, available_balance: 460000 });
     confirmPayout();
     await screen.findByRole('header', { name: 'Payout Not Confirmed' });
 
-    fireEvent.press(screen.getByRole('button', { name: /^Home, tab/ }));
+    goToTab('Home');
     expect(await screen.findByLabelText('Available balance £4,600.00')).toBeOnTheScreen();
   });
 
@@ -168,7 +157,8 @@ describe('Payout flow', () => {
     const requests = respondWithPayout({ payoutStatus: 'completed', delayMs: 50 });
     renderApp('/payouts');
 
-    fillForm({ amount: '400' });
+    fillPayoutForm({ amount: '400' });
+    reviewPayout();
     const confirm = screen.getByRole('button', { name: 'Confirm payout' });
     fireEvent.press(confirm);
     fireEvent.press(confirm);

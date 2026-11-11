@@ -2,17 +2,11 @@ import { fireEvent, screen } from 'expo-router/testing-library';
 
 import * as ScreenSecurity from '@/modules/screen-security';
 import { respondWithPayout } from '@/test/msw';
+import { sendPayout } from '@/test/app-driver';
 import { renderApp } from '@/test/render-app';
 
 function nativeError(code: string) {
   return Object.assign(new Error(code), { code });
-}
-
-function sendPayout(amount: string) {
-  fireEvent.changeText(screen.getByLabelText('Amount'), amount);
-  fireEvent.changeText(screen.getByLabelText('IBAN'), 'GB29NWBK60161331926819');
-  fireEvent.press(screen.getByRole('button', { name: 'Confirm' }));
-  fireEvent.press(screen.getByRole('button', { name: 'Confirm payout' }));
 }
 
 describe('Biometric Check for High-value Payouts', () => {
@@ -25,7 +19,7 @@ describe('Biometric Check for High-value Payouts', () => {
     });
     renderApp('/payouts');
 
-    sendPayout('1000.01');
+    sendPayout({ amount: '1000.01' });
 
     expect(await screen.findByRole('header', { name: 'Payout Completed' })).toBeOnTheScreen();
     expect(ScreenSecurity.isBiometricAuthenticated).toHaveBeenCalledTimes(1);
@@ -37,7 +31,7 @@ describe('Biometric Check for High-value Payouts', () => {
     const requests = respondWithPayout({ payoutStatus: 'completed' });
     renderApp('/payouts');
 
-    sendPayout(amount);
+    sendPayout({ amount });
 
     expect(await screen.findByRole('header', { name: 'Payout Completed' })).toBeOnTheScreen();
     expect(ScreenSecurity.isBiometricAuthenticated).not.toHaveBeenCalled();
@@ -49,7 +43,7 @@ describe('Biometric Check for High-value Payouts', () => {
     const requests = respondWithPayout({ payoutStatus: 'completed' });
     renderApp('/payouts');
 
-    sendPayout('1500');
+    sendPayout({ amount: '1500' });
 
     expect(await screen.findByRole('header', { name: 'Unable to Process Payout' })).toBeOnTheScreen();
     expect(screen.getByText('Biometric authentication was cancelled.')).toBeOnTheScreen();
@@ -67,7 +61,7 @@ describe('Biometric Check for High-value Payouts', () => {
     const requests = respondWithPayout({ payoutStatus: 'completed' });
     renderApp('/payouts');
 
-    sendPayout('1500');
+    sendPayout({ amount: '1500' });
 
     expect(await screen.findByRole('header', { name: 'Biometrics Not Set Up' })).toBeOnTheScreen();
     expect(
@@ -85,7 +79,7 @@ describe('Biometric Check for High-value Payouts', () => {
     const requests = respondWithPayout({ payoutStatus: 'completed' });
     renderApp('/payouts');
 
-    sendPayout('1500');
+    sendPayout({ amount: '1500' });
 
     expect(await screen.findByRole('header', { name: 'Biometrics Not Set Up' })).toBeOnTheScreen();
     expect(requests).toHaveLength(0);
@@ -96,7 +90,7 @@ describe('Biometric Check for High-value Payouts', () => {
     const requests = respondWithPayout({ payoutStatus: 'completed' });
     renderApp('/payouts');
 
-    sendPayout('1500');
+    sendPayout({ amount: '1500' });
 
     expect(await screen.findByText('Biometric authentication was cancelled.')).toBeOnTheScreen();
     expect(requests).toHaveLength(0);

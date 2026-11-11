@@ -1,6 +1,7 @@
 import { fireEvent, screen } from 'expo-router/testing-library';
 
 import { activityItem, merchantFixture, respondWithActivityPage, respondWithMerchant } from '@/test/msw';
+import { openActivitySheet } from '@/test/app-driver';
 import { renderApp } from '@/test/render-app';
 
 describe('Home → Activity sheet', () => {
@@ -9,7 +10,7 @@ describe('Home → Activity sheet', () => {
     respondWithActivityPage({ items: [], next_cursor: null, has_more: false });
 
     renderApp();
-    fireEvent.press(await screen.findByRole('button', { name: 'Show more activity' }));
+    await openActivitySheet();
 
     expect(await screen.findByRole('header', { name: 'Recent Activity' })).toBeOnTheScreen();
     expect(screen).toHavePathname('/activity');
@@ -20,7 +21,7 @@ describe('Home → Activity sheet', () => {
     respondWithActivityPage({ items: [], next_cursor: null, has_more: false });
 
     renderApp();
-    fireEvent.press(await screen.findByRole('button', { name: 'Show more activity' }));
+    await openActivitySheet();
     fireEvent.press(await screen.findByRole('button', { name: 'Done' }));
 
     expect(screen).toHavePathname('/');

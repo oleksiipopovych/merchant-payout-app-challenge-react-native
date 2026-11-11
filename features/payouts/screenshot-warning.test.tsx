@@ -2,6 +2,7 @@ import { act, fireEvent, screen } from 'expo-router/testing-library';
 import { Alert, type AlertButton } from 'react-native';
 
 import { respondWithMerchant } from '@/test/msw';
+import { goToTab } from '@/test/app-driver';
 import { renderApp } from '@/test/render-app';
 import { screenSecurityMock } from '@/test/screen-security';
 
@@ -50,7 +51,7 @@ describe('Screenshot warning', () => {
     respondWithMerchant();
     renderApp('/payouts');
 
-    fireEvent.press(screen.getByRole('button', { name: /^Home, tab/ }));
+    goToTab('Home');
     await screen.findByLabelText('Available balance £5,000.00');
     takeScreenshot();
 
@@ -63,9 +64,9 @@ describe('Screenshot warning', () => {
     expect(screenSecurityMock().activeScreenshotListenerCount()).toBe(1);
 
     for (let i = 0; i < 3; i++) {
-      fireEvent.press(screen.getByRole('button', { name: /^Home, tab/ }));
+      goToTab('Home');
       expect(screenSecurityMock().activeScreenshotListenerCount()).toBe(0);
-      fireEvent.press(screen.getByRole('button', { name: /^Payouts, tab/ }));
+      goToTab('Payouts');
     }
 
     expect(screenSecurityMock().activeScreenshotListenerCount()).toBe(1);
