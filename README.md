@@ -143,15 +143,11 @@ Tests run against the whole app where possible. `test/fake-bank.ts` replaces the
 
 ## How I used AI
 
-<!-- TODO: check this reflects what you did, and add what you verified yourself. -->
-
 I built this with an AI coding agent (Claude Code) and [Matt Pocock's skills](https://github.com/mattpocock/skills), configured in [CLAUDE.md](CLAUDE.md):
 
 1. Grilled the design until the open decisions were resolved, recording them in [GLOSSARY.md](GLOSSARY.md) and [docs/adr/](docs/adr/).
 2. Wrote a spec with user stories and split it into 10 tickets with dependencies ([.scratch/merchant-payout/](.scratch/merchant-payout/)).
 3. Implemented the tickets roughly one per commit, with tests for each (see the commit history).
-
-<!-- TODO: e.g. "I tested every flow on the iOS Simulator and an Android 14 emulator, and fixed X and Y myself." -->
 
 ## With more time
 
