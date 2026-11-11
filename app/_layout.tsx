@@ -1,20 +1,11 @@
 import { QueryClient } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import 'react-native-reanimated';
 
 import { AppProviders } from '@/components/app-providers';
+import { RootNavigator } from '@/components/root-navigator';
 import { useMSW } from '../mocks/useMSW';
-
-function RootNavigator() {
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-    </Stack>
-  );
-}
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());

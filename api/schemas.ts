@@ -4,7 +4,12 @@
  */
 import { z } from 'zod';
 
-import type { ActivityItem, Currency, MerchantDataResponse } from '@/types/api';
+import type {
+  ActivityItem,
+  Currency,
+  MerchantDataResponse,
+  PaginatedActivityResponse,
+} from '@/types/api';
 
 export const currencySchema = z.enum(['GBP', 'EUR']) satisfies z.ZodType<Currency>;
 
@@ -24,3 +29,9 @@ export const merchantDataSchema = z.object({
   currency: currencySchema,
   activity: z.array(activityItemSchema),
 }) satisfies z.ZodType<MerchantDataResponse>;
+
+export const paginatedActivitySchema = z.object({
+  items: z.array(activityItemSchema),
+  next_cursor: z.string().nullable(),
+  has_more: z.boolean(),
+}) satisfies z.ZodType<PaginatedActivityResponse>;

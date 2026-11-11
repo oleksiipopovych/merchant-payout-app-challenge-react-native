@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet } from 'react-native';
 
@@ -53,8 +54,10 @@ export function HomeScreen() {
         <ThemedView style={styles.section}>
           <ThemedText type="subtitle">Recent Activity</ThemedText>
           {merchant.data && (
-            // The Activity sheet is wired up in ticket 03.
-            <RecentActivity activity={merchant.data.activity} onShowMore={() => {}} />
+            <RecentActivity
+              activity={merchant.data.activity}
+              onShowMore={() => router.push('/activity')}
+            />
           )}
         </ThemedView>
       </ScrollView>

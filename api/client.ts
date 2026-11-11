@@ -5,9 +5,9 @@
 import type { z } from 'zod';
 
 import { API_BASE_URL } from '@/constants';
-import type { MerchantDataResponse } from '@/types/api';
+import type { MerchantDataResponse, PaginatedActivityResponse } from '@/types/api';
 
-import { merchantDataSchema } from './schemas';
+import { merchantDataSchema, paginatedActivitySchema } from './schemas';
 
 export type ApiErrorReason =
   | { kind: 'http'; status: number; message: string }
@@ -51,4 +51,15 @@ async function request<T>(path: string, schema: z.ZodType<T>, init?: RequestInit
 
 export function getMerchant(): Promise<MerchantDataResponse> {
   return request('/api/merchant', merchantDataSchema);
+}
+
+export const ACTIVITY_PAGE_SIZE = 15;
+
+export function getActivityPage(
+  cursor: string | null,
+  limit = ACTIVITY_PAGE_SIZE,
+): Promise<PaginatedActivityResponse> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor !== null) params.set('cursor', cursor);
+  return request(`/api/merchant/activity?${params}`, paginatedActivitySchema);
 }

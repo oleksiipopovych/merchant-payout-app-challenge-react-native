@@ -6,7 +6,11 @@ import { http, HttpResponse } from 'msw';
 
 import { API_BASE_URL } from '@/constants';
 import { server } from '@/mocks/server.test';
-import type { ActivityItem, MerchantDataResponse } from '@/types/api';
+import type {
+  ActivityItem,
+  MerchantDataResponse,
+  PaginatedActivityResponse,
+} from '@/types/api';
 
 export function activityItem(overrides: Partial<ActivityItem> & Pick<ActivityItem, 'id'>): ActivityItem {
   return {
@@ -43,6 +47,26 @@ export function respondWithMalformedMerchant() {
   server.use(
     http.get(`${API_BASE_URL}/api/merchant`, () =>
       HttpResponse.json({ available_balance: 'lots', currency: 'USD' }),
+    ),
+  );
+}
+
+/** Serves `body` for every Activity page request; returns the URLs requested, in order. */
+export function respondWithActivityPage(body: PaginatedActivityResponse): URL[] {
+  const requests: URL[] = [];
+  server.use(
+    http.get(`${API_BASE_URL}/api/merchant/activity`, ({ request }) => {
+      requests.push(new URL(request.url));
+      return HttpResponse.json(body);
+    }),
+  );
+  return requests;
+}
+
+export function respondWithActivityError(status = 500) {
+  server.use(
+    http.get(`${API_BASE_URL}/api/merchant/activity`, () =>
+      HttpResponse.json({ error: 'Internal Server Error' }, { status }),
     ),
   );
 }

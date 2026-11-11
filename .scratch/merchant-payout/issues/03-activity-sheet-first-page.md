@@ -7,9 +7,9 @@
 **Status:** ready-for-agent
 
 - [ ] "show more" opens the sheet; Done, swipe-down (iOS) and back (Android) close it
-- [ ] First page loads from the paged Activity endpoint, not from Home's merchant data
-- [ ] Rows show type, description, signed amount, date as "23 Jan 2026", and status
+- [x] First page loads from the paged Activity endpoint, not from Home's merchant data
+- [x] Rows show type, description, signed amount, date as "23 Jan 2026", and status
 - [ ] Pending / processing / failed statuses are visually distinct from completed
-- [ ] Loading state on open; first-page failure shows full-screen error with working Retry
-- [ ] The template's placeholder modal route is removed
-- [ ] Screen tests cover open-from-Home, row content, loading, and error → Retry
+- [x] Loading state on open; first-page failure shows full-screen error with working Retry
+- [x] The template's placeholder modal route is removed
+- [x] Screen tests cover open-from-Home, row content, loading, and error → Retry
