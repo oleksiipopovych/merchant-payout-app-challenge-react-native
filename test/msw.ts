@@ -6,7 +6,19 @@ import { http, HttpResponse } from 'msw';
 
 import { API_BASE_URL } from '@/constants';
 import { server } from '@/mocks/server.test';
-import type { MerchantDataResponse } from '@/types/api';
+import type { ActivityItem, MerchantDataResponse } from '@/types/api';
+
+export function activityItem(overrides: Partial<ActivityItem> & Pick<ActivityItem, 'id'>): ActivityItem {
+  return {
+    type: 'deposit',
+    amount: 10000,
+    currency: 'GBP',
+    date: '2026-01-20T10:00:00.000Z',
+    description: `Activity ${overrides.id}`,
+    status: 'completed',
+    ...overrides,
+  };
+}
 
 export const merchantFixture: MerchantDataResponse = {
   available_balance: 500000,

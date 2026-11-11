@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
 import { BalanceCard } from './balance-card';
+import { RecentActivity } from './recent-activity';
 import { useMerchant } from './use-merchant';
 
 export function HomeScreen() {
@@ -51,6 +52,10 @@ export function HomeScreen() {
 
         <ThemedView style={styles.section}>
           <ThemedText type="subtitle">Recent Activity</ThemedText>
+          {merchant.data && (
+            // The Activity sheet is wired up in ticket 03.
+            <RecentActivity activity={merchant.data.activity} onShowMore={() => {}} />
+          )}
         </ThemedView>
       </ScrollView>
     </ThemedView>

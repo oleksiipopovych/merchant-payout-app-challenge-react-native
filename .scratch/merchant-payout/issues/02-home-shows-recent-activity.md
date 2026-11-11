@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] Exactly the three most recent Activity Items are shown, description and amount only
-- [ ] Negative amounts render with a leading minus before the symbol (−£219.70); positive amounts have no plus
-- [ ] Direction is conveyed by sign and colour; colours work in light and dark mode
-- [ ] A "show more" button is present and accessible
-- [ ] Unit tests cover money formatting for both currencies, negatives and zero
-- [ ] Screen test asserts the three rows and their formatted amounts
+- [x] Exactly the three most recent Activity Items are shown, description and amount only
+- [x] Negative amounts render with a leading minus before the symbol (−£219.70); positive amounts have no plus
+- [x] Direction is conveyed by sign and colour; colours work in light and dark mode
+- [x] A "show more" button is present and accessible
+- [x] Unit tests cover money formatting for both currencies, negatives and zero
+- [x] Screen test asserts the three rows and their formatted amounts

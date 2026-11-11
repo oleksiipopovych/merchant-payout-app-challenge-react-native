@@ -6,6 +6,7 @@ import {
   respondWithMerchant,
   respondWithMerchantError,
   merchantFixture,
+  activityItem,
 } from '@/test/msw';
 
 describe('Home', () => {
@@ -65,5 +66,35 @@ describe('Home', () => {
     await act(() => screen.getByTestId('home-scroll').props.refreshControl.props.onRefresh());
 
     expect(await screen.findByLabelText('Available balance £6,000.00')).toBeOnTheScreen();
+  });
+
+  it('lists the three most recent Activity Items with description and signed amount', async () => {
+    respondWithMerchant({
+      ...merchantFixture,
+      activity: [
+        activityItem({ id: 'oldest', date: '2026-01-19T09:00:00.000Z', description: 'Monthly service fee', type: 'fee', amount: -2500 }),
+        activityItem({ id: 'newest', date: '2026-01-23T16:00:00.000Z', description: 'Refund to Customer MYK', type: 'refund', amount: -21970 }),
+        activityItem({ id: 'third', date: '2026-01-21T12:00:00.000Z', description: 'Payment from Customer RIZ', amount: 17092 }),
+        activityItem({ id: 'second', date: '2026-01-22T08:00:00.000Z', description: 'Payout to Bank Account ****0117', type: 'payout', amount: -187515 }),
+      ],
+    });
+
+    renderApp();
+
+    const rows = await screen.findAllByLabelText(/^Activity: /);
+    expect(rows.map((row) => row.props.accessibilityLabel)).toEqual([
+      'Activity: Refund to Customer MYK, -£219.70',
+      'Activity: Payout to Bank Account ****0117, -£1,875.15',
+      'Activity: Payment from Customer RIZ, £170.92',
+    ]);
+    expect(screen.queryByText('Monthly service fee')).not.toBeOnTheScreen();
+  });
+
+  it('offers a "show more" button under the recent Activity', async () => {
+    respondWithMerchant({ ...merchantFixture, activity: [activityItem({ id: 'a' })] });
+
+    renderApp();
+
+    expect(await screen.findByRole('button', { name: 'Show more activity' })).toBeOnTheScreen();
   });
 });
