@@ -2,7 +2,7 @@
  * Per-test MSW overrides. The shared handlers add 500–2000ms of random latency;
  * these respond immediately with exactly what a test needs.
  */
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 
 import { API_BASE_URL } from '@/constants';
 import { server } from '@/mocks/server.test';
@@ -69,4 +69,34 @@ export function respondWithActivityError(status = 500) {
       HttpResponse.json({ error: 'Internal Server Error' }, { status }),
     ),
   );
+}
+
+type ActivityPageReply =
+  | PaginatedActivityResponse
+  | { status: number }
+  | { page: PaginatedActivityResponse; delayMs: number };
+
+/**
+ * Serves Activity pages keyed by cursor (`null` = first page). A reply can be a page or
+ * an HTTP error status. Returns the cursors requested, in order.
+ */
+export function respondWithActivityPages(
+  pages: [cursor: string | null, reply: ActivityPageReply][],
+): (string | null)[] {
+  const requested: (string | null)[] = [];
+  server.use(
+    http.get(`${API_BASE_URL}/api/merchant/activity`, async ({ request }) => {
+      const cursor = new URL(request.url).searchParams.get('cursor');
+      requested.push(cursor);
+      const reply = pages.find(([key]) => key === cursor)?.[1];
+      if (!reply) return HttpResponse.json({ error: 'Unexpected cursor' }, { status: 404 });
+      if ('delayMs' in reply) {
+        await delay(reply.delayMs);
+        return HttpResponse.json(reply.page);
+      }
+      if ('status' in reply) return HttpResponse.json({ error: 'Internal Server Error' }, { status: reply.status });
+      return HttpResponse.json(reply);
+    }),
+  );
+  return requested;
 }

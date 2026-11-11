@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] Reaching the end of the list fetches the next page with the returned cursor
-- [ ] A footer indicator shows while a next page is loading
-- [ ] When has-more is false, no further requests are made and no spinner remains
-- [ ] A failed later page shows a footer Retry; loaded items are preserved; Retry appends the page
-- [ ] Duplicate fetches are not triggered while a page is already loading
-- [ ] Screen tests cover next page, end of list, and later-page failure → Retry
+- [x] Reaching the end of the list fetches the next page with the returned cursor
+- [x] A footer indicator shows while a next page is loading
+- [x] When has-more is false, no further requests are made and no spinner remains
+- [x] A failed later page shows a footer Retry; loaded items are preserved; Retry appends the page
+- [x] Duplicate fetches are not triggered while a page is already loading
+- [x] Screen tests cover next page, end of list, and later-page failure → Retry
