@@ -20,14 +20,16 @@ type RecentActivityProps = {
 };
 
 export function RecentActivity({ activity, onShowMore }: RecentActivityProps) {
-  const tint = useThemeColor({}, 'tint');
+  const separator = useThemeColor({}, 'border');
+  const secondary = useThemeColor({}, 'secondary');
+  const onSecondary = useThemeColor({}, 'onSecondary');
 
   return (
     <View>
       {mostRecent(activity).map((item) => (
         <View
           key={item.id}
-          style={styles.row}
+          style={[styles.row, { borderBottomColor: separator }]}
           accessible
           accessibilityLabel={`Activity: ${item.description}, ${formatMoney(item.amount, item.currency)}`}>
           <ThemedText numberOfLines={1} style={styles.description}>
@@ -40,8 +42,13 @@ export function RecentActivity({ activity, onShowMore }: RecentActivityProps) {
         accessibilityRole="button"
         accessibilityLabel="Show more activity"
         onPress={onShowMore}
-        style={({ pressed }) => [styles.showMore, { opacity: pressed ? 0.6 : 1 }]}>
-        <ThemedText style={{ color: tint }}>Show more</ThemedText>
+        style={({ pressed }) => [
+          styles.showMore,
+          { backgroundColor: secondary, opacity: pressed ? 0.7 : 1 },
+        ]}>
+        <ThemedText type="defaultSemiBold" style={[styles.showMoreText, { color: onSecondary }]}>
+          Show More
+        </ThemedText>
       </Pressable>
     </View>
   );
@@ -53,8 +60,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    paddingVertical: 12,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   description: { flex: 1 },
-  showMore: { alignSelf: 'center', paddingVertical: 12, paddingHorizontal: 16 },
+  showMore: {
+    marginTop: 16,
+    borderRadius: 12,
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showMoreText: { fontSize: 18 },
 });

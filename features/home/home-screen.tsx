@@ -35,7 +35,7 @@ export function HomeScreen() {
             <ThemedText type="title">Business Account</ThemedText>
           </ThemedView>
 
-          <ThemedView style={styles.section}>
+          <ThemedView style={[styles.section, styles.balanceSection]}>
             <ThemedText type="subtitle">Account Balance</ThemedText>
             {merchant.isPending && <ActivityIndicator accessibilityLabel="Loading balances" />}
             {merchant.isError && (
@@ -73,4 +73,6 @@ const styles = StyleSheet.create({
   content: { padding: 16 },
   header: { marginBottom: 24 },
   section: { marginBottom: 24, gap: 12 },
+  // The reference insets the balance block from the screen edge.
+  balanceSection: { paddingHorizontal: 16 },
 });

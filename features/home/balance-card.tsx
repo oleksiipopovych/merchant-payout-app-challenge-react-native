@@ -13,15 +13,30 @@ type BalanceCardProps = {
 export function BalanceCard({ availableBalance, pendingBalance, currency }: BalanceCardProps) {
   return (
     <View style={styles.row}>
-      <BalanceFigure label="Available balance" amount={formatMoney(availableBalance, currency)} />
-      <BalanceFigure label="Pending balance" amount={formatMoney(pendingBalance, currency)} />
+      <BalanceFigure
+        label="Available"
+        accessibilityName="Available balance"
+        amount={formatMoney(availableBalance, currency)}
+      />
+      <BalanceFigure
+        label="Pending"
+        accessibilityName="Pending balance"
+        amount={formatMoney(pendingBalance, currency)}
+      />
     </View>
   );
 }
 
-function BalanceFigure({ label, amount }: { label: string; amount: string }) {
+type BalanceFigureProps = {
+  label: string;
+  /** Fuller name for screen readers than the short visible label. */
+  accessibilityName: string;
+  amount: string;
+};
+
+function BalanceFigure({ label, accessibilityName, amount }: BalanceFigureProps) {
   return (
-    <View style={styles.figure} accessible accessibilityLabel={`${label} ${amount}`}>
+    <View style={styles.figure} accessible accessibilityLabel={`${accessibilityName} ${amount}`}>
       <ThemedText style={styles.label}>{label}</ThemedText>
       <ThemedText type="subtitle">{amount}</ThemedText>
     </View>
